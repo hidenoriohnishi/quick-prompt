@@ -34,6 +34,7 @@ export function Result() {
   const assistantMessage = messages.find((m) => m.role === 'assistant')?.content || ''
   const [editedResult, setEditedResult] = useState(assistantMessage)
   const [isCopied, setIsCopied] = useState(false)
+  const [wasCopied, setWasCopied] = useState(false)
   const [estimatedCost, setEstimatedCost] = useState<string | null>(null)
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function Result() {
   const handleCopy = () => {
     navigator.clipboard.writeText(editedResult)
     setIsCopied(true)
+    setWasCopied(true)
     window.electron.showNotification({
       title: 'Copied to clipboard!',
       body: 'The result has been copied to your clipboard.',
@@ -74,7 +76,7 @@ export function Result() {
   }
 
   const handleClose = async () => {
-    if (isCopied) {
+    if (wasCopied) {
       resetAndClose()
     } else {
       const result = await window.electron.showConfirmationDialog({
@@ -96,7 +98,7 @@ export function Result() {
       if (e.key === 'Escape') {
         e.preventDefault()
         handleClose()
-      } else if (e.key === 'Enter' && e.shiftKey) {
+      } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         handleCopy()
       }
@@ -116,6 +118,7 @@ export function Result() {
           onChange={(e) => {
             setEditedResult(e.target.value)
             setIsCopied(false)
+            setWasCopied(false)
           }}
           className="w-full h-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md resize-none"
         />
@@ -144,7 +147,7 @@ export function Result() {
             disabled={isCopied}
             className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-green-600 disabled:cursor-not-allowed"
           >
-            {isCopied ? 'Copied!' : 'Copy (Shift+Enter)'}
+            {isCopied ? 'Copied!' : 'Copy (Cmd+Enter)'}
           </button>
         </div>
       </div>

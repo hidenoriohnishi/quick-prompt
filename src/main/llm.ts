@@ -33,36 +33,54 @@ async function handleLLMRequest(
   const requestId = uuidv4()
 
   try {
-    const persistedStateJSON = store.get('settings') as string | undefined
-    if (!persistedStateJSON) {
+    let persistedData = store.get('settings') as any
+
+    if (typeof persistedData === 'string') {
+      try {
+        persistedData = JSON.parse(persistedData)
+      } catch (e) {
+        console.error('Failed to parse settings from store:', e)
+        throw new Error('Could not parse settings.')
+      }
+    }
+
+    let settings: Settings | undefined
+
+    if (persistedData && persistedData.state && persistedData.state.settings) {
+      settings = persistedData.state.settings // Handle Zustand's persisted format
+    } else if (persistedData) {
+      settings = persistedData // Handle raw settings object
+    }
+
+    if (!settings) {
       throw new Error('Settings not found. Please configure your settings.')
     }
 
-    const { state } = JSON.parse(persistedStateJSON)
-    const settings = state.settings as Settings | undefined
-
-    if (!settings) {
-      throw new Error('Settings data is malformed. Please re-configure your settings.')
+    if (!settings.ai) {
+      throw new Error('AI settings are not configured. Please set them in the settings.')
     }
-
+    
     const providerSettings = settings.ai[aiProvider]
-    const apiKey = providerSettings?.apiKey
-    const baseURL = providerSettings?.baseURL
-
-    if (!apiKey) {
+    
+    if (!providerSettings?.apiKey) {
       throw new Error(`API key not found for ${aiProvider}. Please set it in the AI settings.`)
     }
-
+    
     let providerInstance
     if (aiProvider === 'openai') {
-      const config = { apiKey, ...(baseURL ? { baseURL } : {}) }
+      const config: { apiKey: string; baseURL?: string } = { apiKey: providerSettings.apiKey }
+      if ('baseURL' in providerSettings && providerSettings.baseURL) {
+        config.baseURL = providerSettings.baseURL
+      }
       providerInstance = createOpenAI(config)
+    } else if (aiProvider === 'anthropic') {
+      providerInstance = createAnthropic({ apiKey: providerSettings.apiKey })
     } else {
-      providerInstance = createAnthropic({ apiKey })
+      throw new Error(`Unsupported AI provider: ${aiProvider}`);
     }
 
     if (!providerInstance) {
-      throw new Error(`Unsupported AI provider: ${aiProvider}`)
+      throw new Error(`Could not create AI provider instance for: ${aiProvider}`)
     }
 
     // Inform the renderer that the stream is starting
@@ -74,18 +92,12 @@ async function handleLLMRequest(
       // @ts-expect-error experimental_streamData is required for usage stats
       experimental_streamData: true,
       onFinish: (result) => {
-        console.log('[LLM] onFinish called with result:', result)
-        console.log('[LLM] result.usage:', result.usage)
-        console.log('[LLM] result.usage type:', typeof result.usage)
-        console.log('[LLM] result.usage keys:', Object.keys(result.usage || {}))
-        
         // Vercel AI SDKの正しいusage取得方法
         const finalUsage = {
           promptTokens: result.usage?.promptTokens ?? 0,
           completionTokens: result.usage?.completionTokens ?? 0,
           totalTokens: result.usage?.totalTokens ?? 0
         }
-        console.log('[LLM] Final usage calculated:', finalUsage)
         
         onChunk({
           type: 'usage',
@@ -102,16 +114,14 @@ async function handleLLMRequest(
     })
 
     for await (const delta of result.textStream) {
-      console.log('[LLM] delta received:', JSON.stringify(delta, null, 2));
       onChunk({ type: 'chunk', data: delta, requestId })
     }
 
     // 追加のデバッグ: result.usageプロミスも試してみる
     try {
-      const usageFromPromise = await result.usage
-      console.log('[LLM] Usage from result.usage promise:', usageFromPromise)
+      await result.usage
     } catch (error) {
-      console.log('[LLM] Error getting usage from promise:', error)
+      console.error('[LLM] Error getting usage from promise:', error)
     }
 
   } catch (error: any) {

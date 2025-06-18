@@ -4,7 +4,8 @@ import { PromptList } from './PromptList'
 import { PromptDetail } from './PromptDetail'
 import { AISettings } from './AISettings'
 import { clsx } from 'clsx'
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 type NavItemProps = {
   view: SettingsView
@@ -32,6 +33,17 @@ function NavItem({ view, currentView, setView, children }: NavItemProps) {
 
 export function SettingsLayout() {
   const { settingsView, setSettingsView, setCurrentView } = useAppStore()
+  const setSettings = useSettingsStore((state) => state.setSettings)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const settingsFromMain = await window.electron.getSettings()
+      if (settingsFromMain) {
+        setSettings(settingsFromMain)
+      }
+    }
+    fetchSettings()
+  }, [])
 
   const renderContent = () => {
     switch (settingsView) {

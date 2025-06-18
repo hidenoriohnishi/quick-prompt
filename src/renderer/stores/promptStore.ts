@@ -8,7 +8,7 @@ export type Placeholder = {
   id: string
   name: string
   label: string
-  type: 'text' | 'select'
+  type: 'text' | 'select' | 'textarea'
   options?: string[]
   defaultValue?: string
 }

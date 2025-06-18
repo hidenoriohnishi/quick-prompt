@@ -37,9 +37,12 @@ export function AISettings() {
   const setAiSettings = useSettingsStore(state => state.setAiSettings)
 
   const handleApiKeyChange = (provider: keyof AISettings, key: string) => {
-    setAiSettings({
-        [provider]: { apiKey: key }
-    })
+    const newAiSettings = {
+      ...aiSettings,
+      [provider]: { ...aiSettings[provider], apiKey: key }
+    }
+    console.log('[AISettings] Updating AI Settings:', newAiSettings)
+    setAiSettings(newAiSettings)
   }
 
   return (
@@ -53,12 +56,12 @@ export function AISettings() {
       <div className="flex-grow overflow-y-auto pr-2">
         <ApiKeyInput
             label="OpenAI API Key"
-            apiKey={aiSettings.openai.apiKey}
+            apiKey={aiSettings?.openai?.apiKey || ''}
             onApiKeyChange={(key) => handleApiKeyChange('openai', key)}
         />
         <ApiKeyInput
             label="Anthropic API Key"
-            apiKey={aiSettings.anthropic.apiKey}
+            apiKey={aiSettings?.anthropic?.apiKey || ''}
             onApiKeyChange={(key) => handleApiKeyChange('anthropic', key)}
         />
       </div>

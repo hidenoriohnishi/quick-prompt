@@ -8,8 +8,7 @@ export function TitleBar() {
   }
 
   const handleMinimizeClick = () => {
-    // TODO: ipcRenderer.send('minimize-window')
-    console.log('Minimize clicked')
+    window.electron.hideWindow()
   }
 
   const handleCloseClick = () => {

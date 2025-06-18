@@ -33,12 +33,9 @@ function App() {
         setError(new Error(chunk.data))
         setIsLoading(false)
       } else if (chunk.type === 'usage') {
-        console.log('[App] Received usage chunk:', chunk)
         try {
           const usageData = JSON.parse(chunk.data)
-          console.log('[App] Parsed usage data:', usageData)
           setUsage(usageData)
-          console.log('[App] Usage set in store')
         } catch (e) {
           console.error("Failed to parse usage data", e)
         }
@@ -88,23 +85,27 @@ function App() {
     return () => removeListener()
   }, [setCurrentView])
 
+  const theme = useSettingsStore((state) => state.settings.general.theme)
+
   useEffect(() => {
-    // Apply theme from settings
-    const settings = useSettingsStore.getState().settings
-    if (settings.general.theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else if (settings.general.theme === 'light') {
-      document.documentElement.classList.remove('dark')
-    } else {
-      // Logic for system theme
-      const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      if (darkModeQuery.matches) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
+    const root = window.document.documentElement
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    
+    root.classList.toggle('dark', isDark)
+    window.electron.setTheme(theme)
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (theme === 'system') {
+        root.classList.toggle('dark', e.matches)
       }
     }
-  }, [useSettingsStore.getState().settings.general.theme])
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+    }
+  }, [theme])
 
   const renderView = () => {
     switch (currentView) {

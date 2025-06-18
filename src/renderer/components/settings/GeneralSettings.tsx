@@ -1,5 +1,5 @@
 import { useSettingsStore, type GeneralSettings } from '../../stores/settingsStore'
-import React from 'react'
+import React, { useEffect } from 'react'
 
 type ToggleProps = {
   label: string
@@ -60,17 +60,31 @@ function SettingSelect({ label, description, settingKey, value, options, onSelec
   )
 }
 
+const shortcutOptions = [
+  { value: 'Command+Space', label: 'Cmd + Space' },
+  { value: 'Shift+Command+Space', label: 'Shift + Cmd + Space' },
+  { value: 'Alt+Space', label: 'Option + Space' },
+  { value: 'Shift+Alt+Space', label: 'Shift + Option + Space' },
+  { value: 'Control+Space', label: 'Control + Space' },
+  { value: 'Shift+Control+Space', label: 'Shift + Control + Space' },
+]
 
 export function GeneralSettings() {
-  const generalSettings = useSettingsStore(state => state.settings.general)
-  const setGeneralSettings = useSettingsStore(state => state.setGeneralSettings)
+  const generalSettings = useSettingsStore((state) => state.settings.general)
+  const setGeneralSettings = useSettingsStore((state) => state.setGeneralSettings)
 
   const handleToggle = (key: keyof GeneralSettings, value: boolean) => {
     setGeneralSettings({ [key]: value })
+    if (key === 'launchAtLogin') {
+      window.electron.setLaunchAtLogin(value)
+    }
   }
 
   const handleSelect = (key: keyof GeneralSettings, value: any) => {
     setGeneralSettings({ [key]: value })
+    if (key === 'shortcut') {
+      window.electron.updateShortcut(value)
+    }
   }
 
   return (
@@ -106,14 +120,11 @@ export function GeneralSettings() {
           onSelect={handleSelect}
         />
         <SettingSelect
-          label="Language"
-          description="Choose the application language."
-          settingKey="language"
-          value={generalSettings.language}
-          options={[
-            { value: 'en', label: 'English' },
-            { value: 'ja', label: '日本語' },
-          ]}
+          label="Shortcut"
+          description="Set the global shortcut to open the application."
+          settingKey="shortcut"
+          value={generalSettings.shortcut}
+          options={shortcutOptions}
           onSelect={handleSelect}
         />
       </div>

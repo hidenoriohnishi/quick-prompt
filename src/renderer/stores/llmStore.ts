@@ -68,14 +68,19 @@ export const useLlmStore = create<LlmState & LlmActions>((set, get) => ({
   },
   
   setUsage: (usage) => {
-    console.log('[LlmStore] Setting usage:', usage)
-    set({ usage })
+    set((state) => ({
+      usage: {
+        promptTokens: state.usage.promptTokens + usage.promptTokens,
+        completionTokens: state.usage.completionTokens + usage.completionTokens,
+        totalTokens: state.usage.totalTokens + usage.totalTokens,
+      }
+    }))
   },
   setIsLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   setCurrentRequestId: (id) => set({ currentRequestId: id }),
   
-  clear: () => set(initialState),
+  clear: () => set({ messages: [], usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, error: undefined, isLoading: false, currentRequestId: null }),
 
   handleSubmit: (userMessageContent, aiProvider, model, prompt) => {
     get().clear()

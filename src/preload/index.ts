@@ -1,14 +1,24 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import type { MessageBoxOptions, NotificationConstructorOptions } from 'electron'
-import type { LlmResponse } from '../main/llm'
+// import type { LlmResponse } from '../main/llm' // This line causes issues, commenting out for now.
 import type { Prompt } from '../renderer/stores/promptStore'
 import type { Message } from '../renderer/stores/llmStore'
 
+// Copied from src/main/llm.ts to avoid import issues in preload script.
+export type LlmResponse = {
+  type: 'chunk' | 'error' | 'end' | 'usage'
+  data: string
+  requestId?: string
+}
 
 export const api = {
   // ... (rest of the api methods)
   getStore: (key: string) => ipcRenderer.invoke('getStore', key),
   setStore: (key: string, value: any) => ipcRenderer.invoke('setStore', key, value),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  setSettings: (settings: any) => ipcRenderer.invoke('set-settings', settings),
+  updateShortcut: (shortcut: string) => ipcRenderer.invoke('update-shortcut', shortcut),
+  setTheme: (theme: 'system' | 'light' | 'dark') => ipcRenderer.invoke('set-theme', theme),
   onStoreChange: (key: string, callback: (value: any) => void) => {
     const handler = (_event: IpcRendererEvent, value: any) => callback(value)
     ipcRenderer.on(`store-changed-${key}`, handler)

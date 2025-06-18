@@ -4,10 +4,10 @@ import { storage } from '../lib/storage'
 
 // Re-define types here to avoid importing from main process
 export type GeneralSettings = {
+  theme: 'system' | 'light' | 'dark'
   launchAtLogin: boolean
   showInDock: boolean
-  theme: 'light' | 'dark' | 'system'
-  language: 'en' | 'ja'
+  shortcut: string
 }
 
 export type AISettings = {
@@ -21,7 +21,7 @@ export type AISettings = {
 
 export type Settings = {
   general: GeneralSettings,
-  ai: AISettings,
+  ai: AISettings
 }
 
 type SettingsState = {
@@ -36,22 +36,34 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       settings: {
         general: {
+          theme: 'system',
           launchAtLogin: false,
           showInDock: true,
-          theme: 'system',
-          language: 'en',
+          shortcut: 'Shift+Command+Space',
         },
         ai: {
           openai: { apiKey: '' },
           anthropic: { apiKey: '' },
-        }
+        },
       },
       setSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
-      setGeneralSettings: (newGeneralSettings) => set((state) => ({ 
-        settings: { ...state.settings, general: { ...state.settings.general, ...newGeneralSettings } } 
+      setGeneralSettings: (newGeneralSettings) => set((state) => ({
+        settings: { ...state.settings, general: { ...state.settings.general, ...newGeneralSettings } }
       })),
       setAiSettings: (newAiSettings) => set((state) => ({
-        settings: { ...state.settings, ai: { ...state.settings.ai, ...newAiSettings } }
+        settings: {
+          ...state.settings,
+          ai: {
+            openai: {
+              ...state.settings.ai.openai,
+              ...newAiSettings.openai,
+            },
+            anthropic: {
+              ...state.settings.ai.anthropic,
+              ...newAiSettings.anthropic,
+            },
+          },
+        },
       })),
     }),
     {
