@@ -8,7 +8,7 @@ import type { Message } from '../renderer/stores/llmStore'
 export const api = {
   // ... (rest of the api methods)
   getStore: (key: string) => ipcRenderer.invoke('getStore', key),
-  setStore: (key: string, value: any) => ipcRenderer.send('setStore', key, value),
+  setStore: (key: string, value: any) => ipcRenderer.invoke('setStore', key, value),
   onStoreChange: (key: string, callback: (value: any) => void) => {
     const handler = (_event: IpcRendererEvent, value: any) => callback(value)
     ipcRenderer.on(`store-changed-${key}`, handler)

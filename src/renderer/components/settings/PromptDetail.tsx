@@ -7,7 +7,15 @@ const aiproviders = [
   { id: 'anthropic', name: 'Anthropic' },
 ]
 
-const openAIModels = ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo']
+const openAIModels = [
+  'gpt-4o', 
+  'gpt-4o-mini', 
+  'gpt-4-turbo', 
+  'gpt-3.5-turbo',
+  'gpt-4.1',
+  'gpt-4.1-mini',
+  'gpt-4.1-nano'
+]
 const anthropicModels = ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']
 
 export function PromptDetail() {
@@ -29,7 +37,7 @@ export function PromptDetail() {
         template: '',
         placeholders: [],
         aiProvider: 'openai',
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
       })
     }
   }, [selectedPromptId, prompts])

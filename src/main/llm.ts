@@ -1,123 +1,132 @@
+import { type IpcMainEvent, type IpcMain } from 'electron'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { streamText } from 'ai'
-import store from './storage'
-import type { Message } from 'ai'
 import type { Settings } from '../renderer/stores/settingsStore'
-import { IpcMain } from 'electron'
 import { v4 as uuidv4 } from 'uuid'
+import type Store from 'electron-store'
+
+type LLMProvider = 'openai' | 'anthropic'
+
+type LLMRequest = {
+  input: string
+  provider: LLMProvider
+  prompt: string
+  model: string
+}
 
 export type LlmResponse = {
-  type: 'chunk' | 'error' | 'end'
+  type: 'chunk' | 'error' | 'end' | 'usage'
   data: string
+  requestId?: string
 }
 
 async function handleLLMRequest(
-  messages: Message[],
-  aiProvider: 'openai' | 'anthropic',
-  model: string,
-  signal: AbortSignal,
-  onChunk: (chunk: { type: 'chunk'; data: string }) => void,
-  onFinish: (chunk: { type: 'end'; data: string }) => void,
-  onError: (chunk: { type: 'error'; data: string }) => void,
+  event: IpcMainEvent,
+  request: LLMRequest,
+  store: Store,
+  onChunk: (chunk: LlmResponse) => void
 ) {
+  const { provider, input, prompt, model } = request
+  const finalPrompt = prompt.replace('{input}', input)
+  const aiProvider = provider || 'openai'
+  const requestId = uuidv4()
+
   try {
-    const persistedState = store.get('settings-storage') as string | undefined
-    if (!persistedState) {
-      throw new Error('Settings not found. Please go to Settings > AI to set your API key.')
+    const persistedStateJSON = store.get('settings') as string | undefined
+    if (!persistedStateJSON) {
+      throw new Error('Settings not found. Please configure your settings.')
     }
-    const { state } = JSON.parse(persistedState)
-    const settings = state.settings as Settings
-    const apiKey = settings.ai[aiProvider]?.apiKey
+
+    const { state } = JSON.parse(persistedStateJSON)
+    const settings = state.settings as Settings | undefined
+
+    if (!settings) {
+      throw new Error('Settings data is malformed. Please re-configure your settings.')
+    }
+
+    const providerSettings = settings.ai[aiProvider]
+    const apiKey = providerSettings?.apiKey
+    const baseURL = providerSettings?.baseURL
 
     if (!apiKey) {
       throw new Error(`API key not found for ${aiProvider}. Please set it in the AI settings.`)
     }
 
-    let llm
-
+    let providerInstance
     if (aiProvider === 'openai') {
-      const openai = createOpenAI({
-        apiKey,
-        compatibility: 'strict',
-      })
-      llm = openai(model)
-    } else if (aiProvider === 'anthropic') {
-      const anthropic = createAnthropic({ apiKey })
-      llm = anthropic(model)
+      const config = { apiKey, ...(baseURL ? { baseURL } : {}) }
+      providerInstance = createOpenAI(config)
     } else {
+      providerInstance = createAnthropic({ apiKey })
+    }
+
+    if (!providerInstance) {
       throw new Error(`Unsupported AI provider: ${aiProvider}`)
     }
 
+    // Inform the renderer that the stream is starting
+    onChunk({ type: 'chunk', data: '', requestId })
+
     const result = await streamText({
-      model: llm,
-      messages,
-      abortSignal: signal,
+      model: providerInstance.chat(model || 'gpt-4o-mini'),
+      prompt: finalPrompt,
+      // @ts-expect-error experimental_streamData is required for usage stats
+      experimental_streamData: true,
+      onFinish: (result) => {
+        console.log('[LLM] onFinish called with result:', result)
+        console.log('[LLM] result.usage:', result.usage)
+        console.log('[LLM] result.usage type:', typeof result.usage)
+        console.log('[LLM] result.usage keys:', Object.keys(result.usage || {}))
+        
+        // Vercel AI SDKの正しいusage取得方法
+        const finalUsage = {
+          promptTokens: result.usage?.promptTokens ?? 0,
+          completionTokens: result.usage?.completionTokens ?? 0,
+          totalTokens: result.usage?.totalTokens ?? 0
+        }
+        console.log('[LLM] Final usage calculated:', finalUsage)
+        
+        onChunk({
+          type: 'usage',
+          data: JSON.stringify(finalUsage),
+          requestId
+        })
+        
+        onChunk({
+          type: 'end',
+          data: JSON.stringify({ finishReason: result.finishReason }),
+          requestId
+        })
+      }
     })
 
     for await (const delta of result.textStream) {
-      onChunk({ type: 'chunk', data: delta })
+      console.log('[LLM] delta received:', JSON.stringify(delta, null, 2));
+      onChunk({ type: 'chunk', data: delta, requestId })
     }
 
-    const [finishReason, usage] = await Promise.all([result.finishReason, result.usage])
-
-    console.log('[LLM] Request finished. Final usage:', usage)
-    console.log('[LLM] Request finished. Final finishReason:', finishReason)
-
-    onFinish({
-      type: 'end',
-      data: JSON.stringify({ finishReason, usage }),
-    })
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.log('LLM request aborted.')
-    } else {
-      console.error('LLM request failed:', error)
-      onError({
-        type: 'error',
-        data: error instanceof Error ? error.message : 'An unknown error occurred',
-      })
+    // 追加のデバッグ: result.usageプロミスも試してみる
+    try {
+      const usageFromPromise = await result.usage
+      console.log('[LLM] Usage from result.usage promise:', usageFromPromise)
+    } catch (error) {
+      console.log('[LLM] Error getting usage from promise:', error)
     }
+
+  } catch (error: any) {
+    console.error('[LLM] Error processing request:', error)
+    onChunk({ type: 'error', data: error.message, requestId })
   }
 }
 
-const llmRequestControllers = new Map<string, AbortController>()
-
-export function handleLlm(ipcMain: IpcMain) {
-  ipcMain.on('llm-request', async (event, { messages, aiProvider, model }) => {
-    const requestId = uuidv4()
-    const controller = new AbortController()
-    llmRequestControllers.set(requestId, controller)
-
-    const onChunk = (chunk: { type: 'chunk'; data: string }) => {
-      event.sender.send('llm-response', { ...chunk, requestId })
-    }
-    const onFinish = (chunk: { type: 'end'; data: string }) => {
-      event.sender.send('llm-response', { ...chunk, requestId })
-      llmRequestControllers.delete(requestId)
-    }
-    const onError = (chunk: { type: 'error'; data: string }) => {
-      event.sender.send('llm-response', { ...chunk, requestId })
-      llmRequestControllers.delete(requestId)
-    }
-
-    try {
-      await handleLLMRequest(messages, aiProvider, model, controller.signal, onChunk, onFinish, onError)
-    } catch (error) {
-      if (error instanceof Error && error.name !== 'AbortError') {
-        onError({
-          type: 'error',
-          data: error.message ?? 'An unexpected error occurred in handleLLMRequest',
-        })
+export function handleLlm(ipcMain: IpcMain, store: Store) {
+  ipcMain.on('llm-request', (event, request: LLMRequest) => {
+    const onChunk = (chunk: LlmResponse) => {
+      if (event.sender && !event.sender.isDestroyed()) {
+        event.sender.send('llm-response', chunk)
       }
     }
-  })
-
-  ipcMain.on('llm-cancel', (_, requestId: string) => {
-    const controller = llmRequestControllers.get(requestId)
-    if (controller) {
-      controller.abort()
-      llmRequestControllers.delete(requestId)
-    }
+    handleLLMRequest(event, request, store, onChunk)
   })
 } 

@@ -1,54 +1,43 @@
 import { app, Menu, Tray, BrowserWindow, nativeImage } from 'electron'
-import { join } from 'node:path'
-import * as fs from 'fs'
+import path from 'path'
+import { is } from '@electron-toolkit/utils'
 
 let tray: Tray | null = null
-let mainWindow: BrowserWindow | null = null
 
 export function createTray(win: BrowserWindow) {
-  mainWindow = win
-  
-  const iconPath = process.platform === 'win32'
-    ? join(__dirname, 'icon.ico')
-    : join(__dirname, 'icon.svg')
-  
-  console.log(`[Tray] Loading icon from: ${iconPath}`)
-  if (!fs.existsSync(iconPath)) {
-    console.error('[Tray] Icon file not found at path:', iconPath)
-    return;
+  let iconPath: string
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    iconPath = path.join(__dirname, '../../assets/icon.png')
+  } else {
+    iconPath = path.join(process.resourcesPath, 'icon.png')
   }
 
   const icon = nativeImage.createFromPath(iconPath)
-  
-  if (process.platform === 'darwin') {
-    icon.setTemplateImage(true)
-  }
+  icon.setTemplateImage(true)
 
   tray = new Tray(icon)
-  tray.setToolTip('QuickPrompt')
 
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Show App',
       click: () => {
-        mainWindow?.show()
-      },
+        win.show()
+      }
     },
     {
       label: 'Settings',
       click: () => {
-        mainWindow?.show()
-        mainWindow?.webContents.send('navigate', 'settings')
-      },
+        win.show()
+        win.webContents.send('navigate', 'settings')
+      }
     },
     { type: 'separator' },
     {
       label: 'Quit',
-      click: () => {
-        app.quit()
-      },
-    },
+      role: 'quit'
+    }
   ])
 
+  tray.setToolTip('QuickPrompt')
   tray.setContextMenu(contextMenu)
 } 

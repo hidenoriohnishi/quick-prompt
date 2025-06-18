@@ -1,10 +1,10 @@
 import { useAppStore } from '../stores/appStore'
 
 export function TitleBar() {
-  const { showSettings } = useAppStore()
+  const { setCurrentView } = useAppStore()
 
   const handleSettingsClick = () => {
-    showSettings()
+    setCurrentView('settings')
   }
 
   const handleMinimizeClick = () => {

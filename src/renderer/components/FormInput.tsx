@@ -66,7 +66,7 @@ export function FormInput() {
       processedTemplate = processedTemplate.replace(`{{${key}}}`, formValues[key])
     }
 
-    handleSubmit(processedTemplate, selectedPrompt.aiProvider, selectedPrompt.model)
+    handleSubmit(processedTemplate, selectedPrompt.aiProvider, selectedPrompt.model, processedTemplate)
     setCurrentView('loading')
   }
 

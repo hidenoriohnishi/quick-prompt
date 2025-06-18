@@ -53,7 +53,19 @@ export const usePromptStore = create<PromptState>()(
             { id: '2', name: 'text', label: 'Text', type: 'text', defaultValue: '' },
           ],
           aiProvider: 'openai',
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
+          createdAt: new Date(),
+        },
+        {
+          id: 'p_2',
+          name: 'Translate',
+          description: 'Translate text to a specified language.',
+          template: 'Translate the following text to {{language}}: {{text}}',
+          placeholders: [
+            { id: 'ph_1', name: 'content', label: 'Content', type: 'text' }
+          ],
+          aiProvider: 'openai',
+          model: 'gpt-4o-mini',
           createdAt: new Date(),
         }
       ],

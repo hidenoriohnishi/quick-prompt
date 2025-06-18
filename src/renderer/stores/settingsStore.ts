@@ -55,7 +55,7 @@ export const useSettingsStore = create<SettingsState>()(
       })),
     }),
     {
-      name: 'settings-storage', // key in the storage
+      name: 'settings', // key in the storage
       storage: createJSONStorage(() => storage),
     }
   )

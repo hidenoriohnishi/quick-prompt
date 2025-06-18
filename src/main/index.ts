@@ -1,34 +1,34 @@
-import { app, BrowserWindow, shell, ipcMain, dialog, Notification, nativeTheme } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, Notification, nativeTheme, screen } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
-import { setupShortcuts } from './shortcuts'
-import { setupStore } from './storage'
+import { setupShortcuts, setMainWindow } from './shortcuts'
+import { setupStoreListeners, default as store } from './storage'
 import './autoLaunch'
 import { handleLlm } from './llm'
 
-let mainWindow: BrowserWindow | null = null
-
-const iconPath = process.platform === 'win32' 
-  ? join(__dirname, 'icon.ico') 
-  : join(__dirname, 'icon.svg');
+let mainWindow: BrowserWindow | null
 
 function createWindow(): void {
-  // Create the browser window.
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  const icon = is.dev
+    ? join(__dirname, '../../assets/icon.png')
+    : join(process.resourcesPath, 'icon.png')
+
   mainWindow = new BrowserWindow({
-    width: 700,
-    height: 500,
+    width: width,
+    height: height,
     show: false,
     frame: false,
-    icon: iconPath,
+    ...(process.platform !== 'darwin' && { icon }),
     vibrancy: 'under-window',
     visualEffectState: 'active',
     trafficLightPosition: { x: 12, y: 22 },
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-    },
+      sandbox: false
+    }
   })
 
   ipcMain.on('hide-window', () => {
@@ -46,7 +46,11 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow?.show()
+    if (!mainWindow) {
+      throw new Error('"mainWindow" is not defined')
+    }
+    mainWindow.show()
+    setMainWindow(mainWindow)
   })
 
   mainWindow.on('show', () => {
@@ -57,8 +61,12 @@ function createWindow(): void {
     mainWindow?.webContents.send('window-visibility-changed', false)
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    // and ignore CommandOrControl + R in production.
+    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+    return { action: 'deny' }
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     mainWindow.webContents.openDevTools()
@@ -69,23 +77,25 @@ function createWindow(): void {
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.webContents.send('remove-loading')
   })
-
-  setupStore(ipcMain)
-  setupShortcuts(mainWindow)
-  handleLlm(ipcMain)
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.example.quickprompt')
-  
+  electronApp.setAppUserModelId('com.electron')
+
   app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
+    // optimizer.watch(window)
   })
 
   createWindow()
-  if (mainWindow) {
-    createTray(mainWindow)
+  
+  if (!mainWindow) {
+    throw new Error('"mainWindow" is not defined')
   }
+
+  setupStoreListeners()
+  handleLlm(ipcMain, store)
+  createTray(mainWindow)
+  setupShortcuts(mainWindow)
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -31,7 +31,7 @@ function NavItem({ view, currentView, setView, children }: NavItemProps) {
 }
 
 export function SettingsLayout() {
-  const { settingsView, setSettingsView, hideSettings } = useAppStore()
+  const { settingsView, setSettingsView, setCurrentView } = useAppStore()
 
   const renderContent = () => {
     switch (settingsView) {
@@ -58,7 +58,7 @@ export function SettingsLayout() {
           <NavItem view="ai" currentView={settingsView} setView={setSettingsView}>AI</NavItem>
         </div>
         <div className="absolute bottom-4 left-4">
-           <button onClick={hideSettings} className="px-4 py-2 text-sm rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600">
+           <button onClick={() => setCurrentView('selector')} className="px-4 py-2 text-sm rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600">
             Close Settings
           </button>
         </div>

@@ -38,7 +38,6 @@ export function AISettings() {
 
   const handleApiKeyChange = (provider: keyof AISettings, key: string) => {
     setAiSettings({
-        ...aiSettings,
         [provider]: { apiKey: key }
     })
   }

@@ -1,14 +1,29 @@
 import { useState, useEffect } from 'react'
 import { useLlmStore, type Usage } from '../stores/llmStore'
 import { useAppStore } from '../stores/appStore'
+import { usePromptStore } from '../stores/promptStore'
 
-const COST_PER_PROMPT_TOKEN = 0.005 / 1000 // Example: $0.005 per 1K tokens
-const COST_PER_COMPLETION_TOKEN = 0.015 / 1000 // Example: $0.015 per 1K tokens
+const modelCosts = {
+  'gpt-4o': { prompt: 5.0, completion: 15.0 }, // per 1M tokens
+  'gpt-4o-mini': { prompt: 0.15, completion: 0.6 },
+  'gpt-4-turbo': { prompt: 10.0, completion: 30.0 },
+  'gpt-3.5-turbo': { prompt: 0.5, completion: 1.5 },
+  'gpt-4.1': { prompt: 2.0, completion: 8.0 },
+  'gpt-4.1-mini': { prompt: 0.4, completion: 1.6 },
+  'gpt-4.1-nano': { prompt: 0.1, completion: 0.4 },
+  'claude-3-opus-20240229': { prompt: 15.0, completion: 75.0 },
+  'claude-3-sonnet-20240229': { prompt: 3.0, completion: 15.0 },
+  'claude-3-haiku-20240307': { prompt: 0.25, completion: 1.25 },
+};
 
-function calculateCost(usage: Usage): string | null {
-  if (!usage || !usage.totalTokens) return null
+function calculateCost(model: string, usage: Usage): string | null {
+  if (!usage || !usage.totalTokens) return null;
+
+  const costs = modelCosts[model as keyof typeof modelCosts]
+  if (!costs) return null;
+
   const cost =
-    usage.promptTokens * COST_PER_PROMPT_TOKEN + usage.completionTokens * COST_PER_COMPLETION_TOKEN
+    (usage.promptTokens * costs.prompt + usage.completionTokens * costs.completion) / 1_000_000
   return cost.toFixed(4)
 }
 
@@ -27,7 +42,12 @@ export function Result() {
 
   useEffect(() => {
     if (usage) {
-      setEstimatedCost(calculateCost(usage))
+      const selectedPromptId = useAppStore.getState().selectedPromptId
+      const prompts = usePromptStore.getState().prompts
+      const currentPrompt = prompts.find(p => p.id === selectedPromptId)
+      if (currentPrompt) {
+        setEstimatedCost(calculateCost(currentPrompt.model, usage))
+      }
     }
   }, [usage])
 

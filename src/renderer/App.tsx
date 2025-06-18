@@ -6,7 +6,7 @@ import { PromptSelector } from './components/PromptSelector'
 import { FormInput } from './components/FormInput'
 import { Loading } from './components/Loading'
 import { Result } from './components/Result'
-import { Settings } from './components/Settings'
+import { SettingsLayout } from './components/settings/SettingsLayout'
 import { useSettingsStore } from './stores/settingsStore'
 import { useLlmStore } from './stores/llmStore'
 
@@ -32,19 +32,17 @@ function App() {
       } else if (chunk.type === 'error') {
         setError(new Error(chunk.data))
         setIsLoading(false)
-      } else if (chunk.type === 'end') {
+      } else if (chunk.type === 'usage') {
+        console.log('[App] Received usage chunk:', chunk)
         try {
-          const finalData = JSON.parse(chunk.data)
-          console.log('LLM response "end" received, finalData:', finalData)
-          if (finalData.usage) {
-            console.log('Updating usage with:', finalData.usage)
-            setUsage(finalData.usage)
-          } else {
-            console.log('No usage data in finalData.')
-          }
+          const usageData = JSON.parse(chunk.data)
+          console.log('[App] Parsed usage data:', usageData)
+          setUsage(usageData)
+          console.log('[App] Usage set in store')
         } catch (e) {
-          console.error("Failed to parse end message data", e)
+          console.error("Failed to parse usage data", e)
         }
+      } else if (chunk.type === 'end') {
         setIsLoading(false)
         setCurrentRequestId(null)
         useAppStore.getState().setCurrentView('result')
@@ -84,11 +82,11 @@ function App() {
   useEffect(() => {
     const removeListener = window.electron.onNavigate((view: 'settings') => {
       if (view === 'settings') {
-        useAppStore.getState().setCurrentView('settings')
+        setCurrentView('settings')
       }
     })
     return () => removeListener()
-  }, [])
+  }, [setCurrentView])
 
   useEffect(() => {
     // Apply theme from settings
@@ -119,7 +117,7 @@ function App() {
       case 'result':
         return <Result />
       case 'settings':
-        return <Settings />
+        return <SettingsLayout />
       default:
         return <PromptSelector />
     }
