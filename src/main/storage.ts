@@ -3,7 +3,9 @@ import { ipcMain, IpcMain, NativeTheme, BrowserWindow } from 'electron'
 import type { Settings, GeneralSettings, AISettings } from '../lib/types'
 import { updateShortcut } from './shortcuts'
 
-const store = new Store()
+const store = new Store<Record<string, any>>({
+  watch: true
+})
 
 const defaultSettings: Settings = {
   general: {
@@ -20,16 +22,12 @@ const defaultSettings: Settings = {
   }
 }
 
-export const getSettings = (): Settings => {
+function initialGetSettings(): Settings {
   const persistedData = store.get('settings') as any
-
   if (!persistedData) {
     return defaultSettings
   }
-
-  // Check for Zustand's persisted format `{ state: { settings: ... } }`
   if (persistedData.state && persistedData.state.settings) {
-    // To be safe, merge with defaults in case of partial data
     return {
       ...defaultSettings,
       ...persistedData.state.settings,
@@ -43,8 +41,6 @@ export const getSettings = (): Settings => {
       }
     }
   }
-
-  // Check for old format (just the settings object)
   if (persistedData.general || persistedData.ai) {
     return {
       ...defaultSettings,
@@ -59,11 +55,17 @@ export const getSettings = (): Settings => {
       }
     }
   }
-
   return defaultSettings
 }
 
+let cachedSettings: Settings = initialGetSettings()
+
+export const getSettings = (): Settings => {
+  return cachedSettings
+}
+
 export const saveSettings = (newSettings: Settings) => {
+  cachedSettings = newSettings
   const currentState = store.get('settings') as any
   const version = (currentState && currentState.version) || 0
   const newPersistedState = {
@@ -74,6 +76,12 @@ export const saveSettings = (newSettings: Settings) => {
   }
   store.set('settings', newPersistedState)
 }
+
+store.onDidAnyChange((newValue) => {
+  if (newValue && newValue.settings) {
+    cachedSettings = newValue.settings
+  }
+})
 
 export function setupStoreListeners() {
   ipcMain.handle('getStore', (_, key: string) => {

@@ -3,29 +3,6 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { storage } from '../lib/storage'
 import type { Settings, GeneralSettings, AISettings } from '../../lib/types'
 
-// export type GeneralSettings = {
-//   theme: 'system' | 'light' | 'dark'
-//   launchAtLogin: boolean
-//   showInDock: boolean
-//   shortcut: string
-//   language: string
-// }
-//
-// export type AIProvider = {
-//   apiKey?: string
-//   model?: string
-// }
-//
-// export type AISettings = {
-//   provider: 'openai' | 'anthropic'
-//   openai: AIProvider
-//   anthropic: AIProvider
-// }
-//
-// export type Settings = {
-//   general: GeneralSettings,
-//   ai: AISettings
-// }
 
 type SettingsState = {
   settings: Settings,
@@ -63,13 +40,32 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           settings: { ...state.settings, general: { ...state.settings.general, ...newGeneralSettings } }
         })),
-      setAiSettings: (newAiSettings) =>
-        set((state) => ({
-          settings: { ...state.settings, ai: { ...state.settings.ai, ...newAiSettings } }
-        }))
+      setAiSettings: (newAiSettings) => {
+        set((state) => {
+          const currentAiSettings = state.settings.ai
+          const updatedAiSettings = { ...currentAiSettings }
+
+          if (newAiSettings.provider) {
+            updatedAiSettings.provider = newAiSettings.provider
+          }
+          if (newAiSettings.openai) {
+            updatedAiSettings.openai = { ...currentAiSettings.openai, ...newAiSettings.openai }
+          }
+          if (newAiSettings.anthropic) {
+            updatedAiSettings.anthropic = { ...currentAiSettings.anthropic, ...newAiSettings.anthropic }
+          }
+
+          return {
+            settings: {
+              ...state.settings,
+              ai: updatedAiSettings
+            }
+          }
+        })
+      }
     }),
     {
-      name: 'settings', // key in the storage
+      name: 'settings',
       storage: createJSONStorage(() => storage)
     }
   )
