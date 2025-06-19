@@ -17,9 +17,19 @@
 
 ## 🚀 デモンストレーション
 
-![QuickPrompt Demo](assets/demo.gif)
+![QuickPrompt Demo](assets/demo2.gif)
 
-## 🛠️ セットアップと実行 (開発者向け)
+
+## 📝 使い方
+
+設定画面に進み、AIのタブからモデルプロバイダーのAPIキーを設定します。プロンプトの登録は設定画面のPromptsタブで行います。
+
+![QuickPrompt Demo](assets/setting.png)
+
+アプリを立ち上げておくと、グローバルショートカット（デフォルトは`Cmd + Shift + Space`）で起動できます。
+
+
+## 🛠️ セットアップと実行
 
 1.  **依存関係のインストール:**
     ```bash
