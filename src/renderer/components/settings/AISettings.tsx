@@ -1,49 +1,70 @@
-import React, { useState } from 'react'
-import { useSettingsStore, type AISettings } from '../../stores/settingsStore'
+import { useState } from 'react'
+import { useSettingsStore } from '../../stores/settingsStore'
+import type { AISettings } from '../../../lib/types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
-type ApiKeyInputProps = {
+type EditableApiKeyInputProps = {
   label: string
-  apiKey: string
-  onApiKeyChange: (key: string) => void
+  provider: 'openai' | 'anthropic'
+  savedApiKey: string | undefined
 }
 
-function ApiKeyInput({ label, apiKey, onApiKeyChange }: ApiKeyInputProps) {
-  const [showKey, setShowKey] = useState(false)
+function EditableApiKeyInput({ label, provider, savedApiKey }: EditableApiKeyInputProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [inputValue, setInputValue] = useState(savedApiKey || '')
+  const setAiSettings = useSettingsStore((state) => state.setAiSettings)
+
+  const handleSave = () => {
+    setAiSettings({ [provider]: { apiKey: inputValue } })
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setInputValue(savedApiKey || '')
+    setIsEditing(false)
+  }
+
+  const handleEdit = () => {
+    setInputValue(savedApiKey || '')
+    setIsEditing(true)
+  }
+
   return (
     <div className="py-3 border-b border-neutral-200 dark:border-neutral-700">
-        <label className="block text-sm font-medium mb-1">{label}</label>
-        <div className="relative">
-            <input
-                type={showKey ? 'text' : 'password'}
-                value={apiKey}
-                onChange={(e) => onApiKeyChange(e.target.value)}
-                className="w-full p-2 pr-20 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
-                placeholder={`Enter your ${label}`}
-            />
-            <button
-                onClick={() => setShowKey(!showKey)}
-                className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-            >
-                {showKey ? 'Hide' : 'Show'}
-            </button>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      {isEditing ? (
+        <div className="flex items-center space-x-2">
+          <Input
+            type="password"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="w-full"
+            placeholder={`Enter your ${label}`}
+          />
+          <Button onClick={handleSave} className="bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-black dark:text-white">
+            Save
+          </Button>
+          <Button onClick={handleCancel} className="bg-transparent hover:bg-neutral-200 dark:hover:bg-neutral-700">
+            Cancel
+          </Button>
         </div>
+      ) : (
+        <div className="flex items-center space-x-2">
+          <p className="flex-grow text-neutral-600 dark:text-neutral-400 font-mono">
+            {savedApiKey ? '****************' : 'API key is not set'}
+          </p>
+          <Button onClick={handleEdit} className="bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-black dark:text-white">
+            Edit
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
 
-
 export function AISettings() {
-  const aiSettings = useSettingsStore(state => state.settings.ai)
-  const setAiSettings = useSettingsStore(state => state.setAiSettings)
-
-  const handleApiKeyChange = (provider: keyof AISettings, key: string) => {
-    const newAiSettings = {
-      ...aiSettings,
-      [provider]: { ...aiSettings[provider], apiKey: key }
-    }
-    console.log('[AISettings] Updating AI Settings:', newAiSettings)
-    setAiSettings(newAiSettings)
-  }
+  const aiSettings = useSettingsStore((state) => state.settings.ai)
 
   return (
     <div className="flex flex-col h-full">
@@ -54,15 +75,15 @@ export function AISettings() {
         </p>
       </div>
       <div className="flex-grow overflow-y-auto pr-2">
-        <ApiKeyInput
-            label="OpenAI API Key"
-            apiKey={aiSettings?.openai?.apiKey || ''}
-            onApiKeyChange={(key) => handleApiKeyChange('openai', key)}
+        <EditableApiKeyInput
+          label="OpenAI API Key"
+          provider="openai"
+          savedApiKey={aiSettings?.openai?.apiKey}
         />
-        <ApiKeyInput
-            label="Anthropic API Key"
-            apiKey={aiSettings?.anthropic?.apiKey || ''}
-            onApiKeyChange={(key) => handleApiKeyChange('anthropic', key)}
+        <EditableApiKeyInput
+          label="Anthropic API Key"
+          provider="anthropic"
+          savedApiKey={aiSettings?.anthropic?.apiKey}
         />
       </div>
     </div>
