@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import TextareaAutosize from 'react-textarea-autosize'
 import { useAppStore } from '../stores/appStore'
 import { usePromptStore } from '../stores/promptStore'
 import { useLlmStore } from '../stores/llmStore'
@@ -107,8 +108,8 @@ export function FormInput() {
                     className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
                   >
                     {options?.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
+                      <option key={option.id} value={option.value}>
+                        {option.label}
                       </option>
                     ))}
                   </select>
@@ -120,13 +121,14 @@ export function FormInput() {
                   <label htmlFor={id} className="block text-sm font-medium mb-1">
                     {label}
                   </label>
-                  <textarea
+                  <TextareaAutosize
                     id={id}
                     name={name}
                     value={formValues[name] || defaultValue || ''}
                     onChange={handleInputChange}
                     placeholder={`Enter ${label}...`}
-                    className="w-full h-24 p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
+                    className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
+                    minRows={3}
                   />
                 </div>
               )
