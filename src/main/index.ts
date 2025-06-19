@@ -2,109 +2,16 @@ import { app, BrowserWindow, ipcMain, dialog, Notification, nativeTheme } from '
 import { join } from 'node:path'
 import { electronApp, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
-import { setMainWindow, registerShortcut, updateShortcut, unregisterAllShortcuts } from './shortcuts'
-import { setupStoreListeners, default as store } from './storage'
+import { setMainWindow, registerShortcut, unregisterAllShortcuts } from './shortcuts'
+import {
+  setupStoreListeners,
+  setupSettingsHandlers,
+  default as store
+} from './storage'
 import { handleLlm } from './llm'
-
-// Type definitions copied from renderer process to avoid import issues
-export type GeneralSettings = {
-  theme: 'system' | 'light' | 'dark'
-  launchAtLogin: boolean
-  showInDock: boolean
-  shortcut: string
-  language: string
-}
-
-export type AIProvider = {
-  apiKey?: string
-  model?: string
-}
-
-export type AISettings = {
-  provider: 'openai' | 'anthropic'
-  openai: AIProvider
-  anthropic: AIProvider
-}
-
-export type Settings = {
-  general: GeneralSettings
-  ai: AISettings
-}
-
-// End of type definitions
+import type { Settings, GeneralSettings, AISettings } from '../lib/types'
 
 let mainWindow: BrowserWindow | null
-
-const getSettings = (): Settings => {
-  const persistedData = store.get('settings') as any
-
-  const defaultSettings: Settings = {
-    general: {
-      theme: 'system',
-      launchAtLogin: false,
-      showInDock: true,
-      shortcut: 'Shift+Command+Space',
-      language: 'en'
-    },
-    ai: {
-      provider: 'openai',
-      openai: {},
-      anthropic: {}
-    }
-  }
-
-  if (!persistedData) {
-    return defaultSettings
-  }
-
-  // Check for Zustand's persisted format `{ state: { settings: ... } }`
-  if (persistedData.state && persistedData.state.settings) {
-    // To be safe, merge with defaults in case of partial data
-    return {
-      ...defaultSettings,
-      ...persistedData.state.settings,
-      general: {
-        ...defaultSettings.general,
-        ...(persistedData.state.settings.general || {})
-      },
-      ai: {
-        ...defaultSettings.ai,
-        ...(persistedData.state.settings.ai || {})
-      }
-    }
-  }
-
-  // Check for old format (just the settings object)
-  if (persistedData.general || persistedData.ai) {
-    return {
-      ...defaultSettings,
-      ...persistedData,
-      general: {
-        ...defaultSettings.general,
-        ...(persistedData.general || {})
-      },
-      ai: {
-        ...defaultSettings.ai,
-        ...(persistedData.ai || {})
-      }
-    }
-  }
-
-  return defaultSettings
-}
-
-const saveSettings = (newSettings: Settings) => {
-  const currentState = store.get('settings') as any
-  const version = (currentState && currentState.version) || 0
-  const newPersistedState = {
-    state: {
-      settings: newSettings
-    },
-    version: version
-  }
-  store.set('settings', newPersistedState)
-}
-
 
 function createWindow(): void {
   const icon = is.dev
@@ -184,43 +91,11 @@ app.whenReady().then(() => {
     setMainWindow(mainWindow)
     createTray(mainWindow)
     registerShortcut(mainWindow)
+    setupSettingsHandlers(ipcMain, nativeTheme, mainWindow)
   }
 
   setupStoreListeners()
   handleLlm(ipcMain, store)
-
-  ipcMain.handle('get-settings', () => {
-    return getSettings()
-  })
-
-  ipcMain.handle(
-    'set-settings',
-    (_, newSettings: { general?: Partial<GeneralSettings>; ai?: Partial<AISettings> }) => {
-      const currentSettings = getSettings()
-      const mergedSettings: Settings = {
-        ...currentSettings,
-        general: { ...currentSettings.general, ...newSettings.general },
-        ai: { ...currentSettings.ai, ...newSettings.ai }
-      }
-      saveSettings(mergedSettings)
-    }
-  )
-
-  ipcMain.handle('update-shortcut', async (_, shortcut: string) => {
-    if (mainWindow) {
-      updateShortcut(shortcut, mainWindow)
-    }
-    const currentSettings = getSettings()
-    currentSettings.general.shortcut = shortcut
-    saveSettings(currentSettings)
-  })
-
-  ipcMain.handle('set-theme', (_, theme: 'light' | 'dark' | 'system') => {
-    nativeTheme.themeSource = theme
-    const currentSettings = getSettings()
-    currentSettings.general.theme = theme
-    saveSettings(currentSettings)
-  })
 
   nativeTheme.on('updated', () => {
     mainWindow?.webContents.send('theme-updated', nativeTheme.themeSource)

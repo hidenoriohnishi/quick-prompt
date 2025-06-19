@@ -1,5 +1,7 @@
-import { useSettingsStore, type GeneralSettings } from '../../stores/settingsStore'
+import { useSettingsStore } from '../../stores/settingsStore'
+import type { GeneralSettings } from '../../../lib/types'
 import React, { useEffect } from 'react'
+import { Label } from '../../components/ui/label'
 
 type ToggleProps = {
   label: string
