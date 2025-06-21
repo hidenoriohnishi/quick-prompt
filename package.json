@@ -54,8 +54,14 @@
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "assets/icon.png",
+        "to": "icon.png"
+      }
+    ],
     "mac": {
-      "icon": "assets/icon.png"
+      "icon": "assets/quick-prompt-app-icon@2x.png"
     },
     "win": {
       "icon": "assets/icon.ico"
