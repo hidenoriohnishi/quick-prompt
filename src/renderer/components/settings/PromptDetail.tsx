@@ -1,131 +1,50 @@
-import { useState, useEffect } from 'react'
-import { usePromptStore, type Prompt, type Placeholder, type SelectOption } from '../../stores/promptStore'
 import { useAppStore } from '../../stores/appStore'
+import { usePromptForm } from '../../hooks/usePromptForm'
+import type { Placeholder, SelectOption } from '../../../lib/types'
 
 const aiproviders = [
   { id: 'openai', name: 'OpenAI' },
-  { id: 'anthropic', name: 'Anthropic' },
+  { id: 'anthropic', name: 'Anthropic' }
 ]
 
 const openAIModels = [
-  'gpt-4o', 
-  'gpt-4o-mini', 
-  'gpt-4-turbo', 
+  'gpt-4o',
+  'gpt-4o-mini',
+  'gpt-4-turbo',
   'gpt-3.5-turbo',
-  'gpt-4.1',
-  'gpt-4.1-mini',
-  'gpt-4.1-nano'
 ]
-const anthropicModels = ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']
+const anthropicModels = [
+  'claude-3-opus-20240229',
+  'claude-3-sonnet-20240229',
+  'claude-3-haiku-20240307'
+]
 
 export function PromptDetail() {
   const { selectedPromptId, setSettingsView } = useAppStore()
-  const { prompts, addPrompt, updatePrompt } = usePromptStore()
-  const [prompt, setPrompt] = useState<Omit<Prompt, 'id' | 'createdAt'>>()
-
-  useEffect(() => {
-    if (selectedPromptId) {
-      const existingPrompt = prompts.find(p => p.id === selectedPromptId)
-      if (existingPrompt) {
-        setPrompt(existingPrompt)
-      }
-    } else {
-      // Set default values for a new prompt
-      setPrompt({
-        name: '',
-        description: '',
-        template: '',
-        placeholders: [],
-        aiProvider: 'openai',
-        model: 'gpt-4o-mini',
-      })
-    }
-  }, [selectedPromptId, prompts])
+  const {
+    prompt,
+    setPrompt,
+    handleSave: handleSaveHook,
+    handlePlaceholderChange,
+    handlePlaceholderOptionChange,
+    addPlaceholderOption,
+    removePlaceholderOption,
+    addPlaceholder,
+    removePlaceholder
+  } = usePromptForm(selectedPromptId)
 
   const handleSave = () => {
-    if (!prompt) return;
-
-    if (selectedPromptId) {
-      const originalPrompt = prompts.find(p => p.id === selectedPromptId)
-      if (originalPrompt) {
-        // We need to pass the full prompt object, including the original createdAt
-        updatePrompt({ ...prompt, id: selectedPromptId, createdAt: originalPrompt.createdAt })
-      }
-    } else {
-      // addPrompt now takes the partial prompt and handles id/createdAt
-      addPrompt(prompt)
+    if (handleSaveHook()) {
+      setSettingsView('prompts')
     }
-    setSettingsView('prompts')
   }
-  
+
   const handleCancel = () => {
     setSettingsView('prompts')
   }
 
   if (!prompt) {
     return <div>Loading prompt...</div>
-  }
-
-  const handlePlaceholderChange = (
-    index: number,
-    field: keyof Placeholder,
-    value: string | SelectOption[]
-  ) => {
-    const updatedPlaceholders = [...prompt.placeholders]
-    const currentPlaceholder = { ...updatedPlaceholders[index] }
-
-    // Type assertion to correctly handle the 'field' property
-    ;(currentPlaceholder[field] as any) = value
-
-    // If type is changed to 'select', initialize options array
-    if (field === 'type' && value === 'select' && !currentPlaceholder.options) {
-      currentPlaceholder.options = []
-    }
-
-    updatedPlaceholders[index] = currentPlaceholder
-    setPrompt({ ...prompt, placeholders: updatedPlaceholders })
-  }
-
-  const handlePlaceholderOptionChange = (
-    placeholderIndex: number,
-    optionIndex: number,
-    field: keyof SelectOption,
-    value: string
-  ) => {
-    if (!prompt.placeholders[placeholderIndex].options) return
-
-    const updatedOptions = [...(prompt.placeholders[placeholderIndex].options || [])]
-    updatedOptions[optionIndex] = { ...updatedOptions[optionIndex], [field]: value }
-
-    handlePlaceholderChange(placeholderIndex, 'options', updatedOptions)
-  }
-
-  const addPlaceholderOption = (placeholderIndex: number) => {
-    const newOption: SelectOption = { id: `opt_${Date.now()}`, label: '', value: '' }
-    const updatedOptions = [...(prompt.placeholders[placeholderIndex].options || []), newOption]
-    handlePlaceholderChange(placeholderIndex, 'options', updatedOptions)
-  }
-
-  const removePlaceholderOption = (placeholderIndex: number, optionIndex: number) => {
-    const updatedOptions = (prompt.placeholders[placeholderIndex].options || []).filter(
-      (_, i) => i !== optionIndex
-    )
-    handlePlaceholderChange(placeholderIndex, 'options', updatedOptions)
-  }
-
-  const addPlaceholder = () => {
-    const newPlaceholder: Placeholder = {
-      id: `ph_${Date.now()}`,
-      name: '',
-      label: '',
-      type: 'text',
-    }
-    setPrompt({ ...prompt, placeholders: [...prompt.placeholders, newPlaceholder] })
-  }
-
-  const removePlaceholder = (index: number) => {
-    const updatedPlaceholders = prompt.placeholders.filter((_, i) => i !== index)
-    setPrompt({ ...prompt, placeholders: updatedPlaceholders })
   }
 
   return (
@@ -165,17 +84,20 @@ export function PromptDetail() {
             placeholder="e.g., Translate the following text to {{language}}: {{text}}"
           />
         </div>
-        
+
         <div className="border-t pt-4 mt-4">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold">Placeholders</h3>
-            <button onClick={addPlaceholder} className="text-sm px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700">
+            <button
+              onClick={addPlaceholder}
+              className="text-sm px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            >
               + Add
             </button>
           </div>
           <div className="space-y-2">
-            {prompt.placeholders.map((p, index) => (
-              <div key={index} className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800/50">
+            {prompt.placeholders.map((p: Placeholder, index: number) => (
+              <div key={p.id} className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800/50">
                 <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <label className="text-xs text-neutral-500">Name</label>
@@ -242,7 +164,7 @@ export function PromptDetail() {
                       </button>
                     </div>
                     <div className="space-y-2">
-                      {(p.options || []).map((option, optionIndex) => (
+                      {(p.options || []).map((option: SelectOption, optionIndex: number) => (
                         <div key={option.id} className="grid grid-cols-12 gap-2 items-center">
                           <div className="col-span-5">
                             <input
@@ -256,8 +178,7 @@ export function PromptDetail() {
                                   e.target.value
                                 )
                               }
-                              placeholder="Label"
-                              className="w-full p-1 text-xs bg-white dark:bg-neutral-700/50 border border-neutral-200 dark:border-neutral-600 rounded-md"
+                              className="w-full p-1.5 text-sm bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
                             />
                           </div>
                           <div className="col-span-5">
@@ -272,27 +193,15 @@ export function PromptDetail() {
                                   e.target.value
                                 )
                               }
-                              placeholder="Value"
-                              className="w-full p-1 text-xs bg-white dark:bg-neutral-700/50 border border-neutral-200 dark:border-neutral-600 rounded-md"
+                              className="w-full p-1.5 text-sm bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
                             />
                           </div>
                           <div className="col-span-2 text-right">
                             <button
                               onClick={() => removePlaceholderOption(index, optionIndex)}
-                              className="text-red-500 hover:text-red-600"
+                              className="text-red-500 hover:text-red-700"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
+                              Remove
                             </button>
                           </div>
                         </div>
@@ -304,40 +213,59 @@ export function PromptDetail() {
             ))}
           </div>
         </div>
-        
-        <h3 className="text-lg font-semibold border-t pt-4 mt-4">AI Settings</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">AI Provider</label>
-            <select
-              value={prompt.aiProvider}
-              onChange={(e) => setPrompt({ ...prompt, aiProvider: e.target.value, model: '' })}
-              className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
-            >
-              {aiproviders.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Model</label>
-            <select
-              value={prompt.model}
-              onChange={(e) => setPrompt({ ...prompt, model: e.target.value })}
-              className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
-              disabled={!prompt.aiProvider}
-            >
-              {(prompt.aiProvider === 'openai' ? openAIModels : anthropicModels).map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-lg font-semibold mb-2">AI Settings</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">AI Provider</label>
+              <select
+                value={prompt.aiProvider}
+                onChange={(e) =>
+                  setPrompt({
+                    ...prompt,
+                    aiProvider: e.target.value,
+                    model: e.target.value === 'openai' ? 'gpt-4o-mini' : 'claude-3-haiku-20240307'
+                  })
+                }
+                className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
+              >
+                {aiproviders.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Model</label>
+              <select
+                value={prompt.model}
+                onChange={(e) => setPrompt({ ...prompt, model: e.target.value })}
+                className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
+              >
+                {(prompt.aiProvider === 'openai' ? openAIModels : anthropicModels).map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-
       </div>
-      
-      <div className="flex justify-end pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-700 space-x-2">
-        <button onClick={handleCancel} className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600">
+      <div className="flex justify-end space-x-2 mt-4">
+        <button
+          onClick={handleCancel}
+          className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+        >
           Cancel
         </button>
-        <button onClick={handleSave} className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">
-          Save
+        <button
+          onClick={handleSave}
+          className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Save Prompt
         </button>
       </div>
     </div>
