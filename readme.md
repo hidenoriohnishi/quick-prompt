@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/icon.svg" alt="icon" width="128"/>
+  <img src="assets/quick-prompt-app-icon.svg" alt="icon" width="128"/>
   <h1>QuickPrompt</h1>
   <p>シンプルなLLMプロンプトランチャー</p>
 </div>

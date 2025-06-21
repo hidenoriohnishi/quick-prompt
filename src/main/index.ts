@@ -80,6 +80,7 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
+  app.dock.hide()
 
   app.on('browser-window-created', () => {
     // optimizer.watch(window) // This seems to be deprecated or causing issues.
@@ -92,6 +93,7 @@ app.whenReady().then(() => {
     createTray(mainWindow)
     registerShortcut(mainWindow)
     setupSettingsHandlers(ipcMain, nativeTheme, mainWindow)
+    app.dock.hide()
   }
 
   setupStoreListeners()

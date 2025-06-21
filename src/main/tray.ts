@@ -13,6 +13,7 @@ export function createTray(win: BrowserWindow) {
   }
 
   const icon = nativeImage.createFromPath(iconPath)
+  // macOSのダーク/ライトモードに対応させます
   icon.setTemplateImage(true)
 
   tray = new Tray(icon)
