@@ -2,9 +2,10 @@ import { type IpcMainEvent, type IpcMain } from 'electron'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { streamText } from 'ai'
-import type { Settings } from '../renderer/stores/settingsStore'
+import type { Settings } from '../lib/types'
 import { v4 as uuidv4 } from 'uuid'
 import type Store from 'electron-store'
+import { getSettings } from './storage'
 
 type LLMProvider = 'openai' | 'anthropic'
 
@@ -33,24 +34,7 @@ async function handleLLMRequest(
   const requestId = uuidv4()
 
   try {
-    let persistedData = store.get('settings') as any
-
-    if (typeof persistedData === 'string') {
-      try {
-        persistedData = JSON.parse(persistedData)
-      } catch (e) {
-        console.error('Failed to parse settings from store:', e)
-        throw new Error('Could not parse settings.')
-      }
-    }
-
-    let settings: Settings | undefined
-
-    if (persistedData && persistedData.state && persistedData.state.settings) {
-      settings = persistedData.state.settings // Handle Zustand's persisted format
-    } else if (persistedData) {
-      settings = persistedData // Handle raw settings object
-    }
+    const settings = getSettings()
 
     if (!settings) {
       throw new Error('Settings not found. Please configure your settings.')
@@ -68,11 +52,7 @@ async function handleLLMRequest(
     
     let providerInstance
     if (aiProvider === 'openai') {
-      const config: { apiKey: string; baseURL?: string } = { apiKey: providerSettings.apiKey }
-      if ('baseURL' in providerSettings && providerSettings.baseURL) {
-        config.baseURL = providerSettings.baseURL
-      }
-      providerInstance = createOpenAI(config)
+      providerInstance = createOpenAI({ apiKey: providerSettings.apiKey })
     } else if (aiProvider === 'anthropic') {
       providerInstance = createAnthropic({ apiKey: providerSettings.apiKey })
     } else {

@@ -9,9 +9,41 @@ import { Result } from './components/Result'
 import { SettingsLayout } from './components/settings/SettingsLayout'
 import { useSettingsStore } from './stores/settingsStore'
 import { useLlmStore } from './stores/llmStore'
+import { usePromptStore } from './stores/promptStore'
+import type { Settings, Prompt } from '../lib/types'
 
 function App() {
   const { currentView, setCurrentView } = useAppStore()
+  const { settings, setSettings, isInitialized: isSettingsInitialized, setInitialized: setSettingsInitialized } = useSettingsStore()
+  const { prompts, setPrompts, isInitialized: isPromptsInitialized, setInitialized: setPromptsInitialized } = usePromptStore()
+
+  useEffect(() => {
+    const removeListener = window.electron.onSettingsInitialized((initialSettings: Settings) => {
+      setSettings(initialSettings)
+      setSettingsInitialized(true)
+    })
+    return () => removeListener()
+  }, [setSettings, setSettingsInitialized])
+
+  useEffect(() => {
+    if (isSettingsInitialized) {
+      window.electron.setSettings(settings)
+    }
+  }, [settings, isSettingsInitialized])
+
+  useEffect(() => {
+    const removeListener = window.electron.onPromptsInitialized((initialPrompts: Prompt[]) => {
+      setPrompts(initialPrompts)
+      setPromptsInitialized(true)
+    })
+    return () => removeListener()
+  }, [setPrompts, setPromptsInitialized])
+
+  useEffect(() => {
+    if (isPromptsInitialized) {
+      window.electron.setPrompts(prompts)
+    }
+  }, [prompts, isPromptsInitialized])
 
   useEffect(() => {
     const { 
@@ -92,7 +124,6 @@ function App() {
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     
     root.classList.toggle('dark', isDark)
-    window.electron.setTheme(theme)
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = (e: MediaQueryListEvent) => {
