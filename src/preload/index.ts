@@ -17,8 +17,23 @@ export const api = {
   setStore: (key: string, value: any) => ipcRenderer.invoke('setStore', key, value),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setSettings: (settings: any) => ipcRenderer.invoke('set-settings', settings),
+  getPrompts: () => ipcRenderer.invoke('get-prompts'),
+  setPrompts: (prompts: any) => ipcRenderer.invoke('set-prompts', prompts),
+  onSettingsInitialized: (callback: (settings: any) => void) => {
+    const handler = (_event: IpcRendererEvent, settings: any) => callback(settings)
+    ipcRenderer.on('settings-initialized', handler)
+    return () => {
+      ipcRenderer.removeListener('settings-initialized', handler)
+    }
+  },
+  onPromptsInitialized: (callback: (prompts: any) => void) => {
+    const handler = (_event: IpcRendererEvent, prompts: any) => callback(prompts)
+    ipcRenderer.on('prompts-initialized', handler)
+    return () => {
+      ipcRenderer.removeListener('prompts-initialized', handler)
+    }
+  },
   updateShortcut: (shortcut: string) => ipcRenderer.invoke('update-shortcut', shortcut),
-  setTheme: (theme: 'system' | 'light' | 'dark') => ipcRenderer.invoke('set-theme', theme),
   onStoreChange: (key: string, callback: (value: any) => void) => {
     const handler = (_event: IpcRendererEvent, value: any) => callback(value)
     ipcRenderer.on(`store-changed-${key}`, handler)

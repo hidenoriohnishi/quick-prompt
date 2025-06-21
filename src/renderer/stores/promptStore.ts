@@ -1,7 +1,6 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { storage } from '../lib/storage'
 import { v4 as uuidv4 } from 'uuid'
+import type { Prompt, Placeholder } from '../../lib/types'
 
 export type SelectOption = {
   id: string
@@ -38,41 +37,34 @@ type StoreType = {
 type PromptState = {
   prompts: Prompt[]
   setPrompts: (prompts: Prompt[]) => void
-  addPrompt: (prompt: Omit<Prompt, 'id' | 'createdAt'>) => void
+  addPrompt: (prompt: Omit<Prompt, 'id' | 'createdAt' | 'updatedAt'>) => void
   updatePrompt: (prompt: Prompt) => void
   deletePrompt: (id: string) => void
-  initialize: () => Promise<void>
   getPromptById: (id: string) => Prompt | undefined
+  isInitialized: boolean
+  setInitialized: (isInitialized: boolean) => void
 }
 
-export const usePromptStore = create<PromptState>()(
-  persist(
-    (set, get) => ({
-      prompts: [],
-      getPromptById: (id) => get().prompts.find((p) => p.id === id),
-      setPrompts: (prompts) => set({ prompts }),
-      addPrompt: (prompt) => {
-        const newPrompt: Prompt = {
-          ...prompt,
-          id: uuidv4(),
-          createdAt: new Date(),
-        }
-        set((state) => ({ prompts: [...state.prompts, newPrompt] }))
-      },
-      updatePrompt: (prompt) =>
-        set((state) => ({
-          prompts: state.prompts.map((p) => (p.id === prompt.id ? prompt : p)),
-        })),
-      deletePrompt: (id) =>
-        set((state) => ({ prompts: state.prompts.filter((p) => p.id !== id) })),
-      initialize: async () => {
-        const store = (await window.electron.getStore()) as StoreType
-        set({ prompts: store.prompts || [] })
-      },
-    }),
-    {
-      name: 'prompt-storage',
-      storage: createJSONStorage(() => storage),
+export const usePromptStore = create<PromptState>()((set, get) => ({
+  prompts: [],
+  isInitialized: false,
+  setInitialized: (isInitialized) => set({ isInitialized }),
+  getPromptById: (id) => get().prompts.find((p) => p.id === id),
+  setPrompts: (prompts) => set({ prompts }),
+  addPrompt: (prompt) => {
+    const newPrompt: Prompt = {
+      ...prompt,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
-  )
-) 
+    set((state) => ({ prompts: [...state.prompts, newPrompt] }))
+  },
+  updatePrompt: (prompt) =>
+    set((state) => ({
+      prompts: state.prompts.map((p) =>
+        p.id === prompt.id ? { ...prompt, updatedAt: new Date().toISOString() } : p
+      )
+    })),
+  deletePrompt: (id) => set((state) => ({ prompts: state.prompts.filter((p) => p.id !== id) }))
+})) 
