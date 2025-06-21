@@ -1,38 +1,6 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import type { Prompt, Placeholder } from '../../lib/types'
-
-export type SelectOption = {
-  id: string
-  label: string
-  value: string
-}
-
-// Re-define types here to avoid importing from main process
-export type Placeholder = {
-  id: string
-  name: string
-  label: string
-  type: 'text' | 'select' | 'textarea'
-  options?: SelectOption[]
-  defaultValue?: string
-}
-
-export type Prompt = {
-  id: string
-  name: string
-  description: string
-  template: string
-  placeholders: Placeholder[]
-  aiProvider: string // 'openai' | 'anthropic' etc.
-  model: string
-  createdAt: Date
-}
-
-type StoreType = {
-  prompts: Prompt[]
-  // other store properties
-}
+import type { Prompt } from '../../lib/types'
 
 type PromptState = {
   prompts: Prompt[]
