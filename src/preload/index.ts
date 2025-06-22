@@ -33,7 +33,7 @@ export const api = {
       ipcRenderer.removeListener('prompts-initialized', handler)
     }
   },
-  updateShortcut: (shortcut: string) => ipcRenderer.invoke('update-shortcut', shortcut),
+  updateShortcut: (shortcut: string) => ipcRenderer.send('update-shortcut', shortcut),
   onStoreChange: (key: string, callback: (value: any) => void) => {
     const handler = (_event: IpcRendererEvent, value: any) => callback(value)
     ipcRenderer.on(`store-changed-${key}`, handler)
@@ -75,6 +75,8 @@ export const api = {
   },
   showConfirmationDialog: (options: MessageBoxOptions) => ipcRenderer.invoke('show-confirmation-dialog', options),
   showNotification: (options: NotificationConstructorOptions) => ipcRenderer.send('show-notification', options),
+  setLaunchAtLogin: (shouldLaunch: boolean) => ipcRenderer.send('set-launch-at-login', shouldLaunch),
+  toggleMenuBar: (show: boolean) => ipcRenderer.send('toggle-menu-bar', show)
 }
 
 contextBridge.exposeInMainWorld('electron', api)

@@ -1,7 +1,7 @@
 export type GeneralSettings = {
   theme: 'system' | 'light' | 'dark'
   launchAtLogin: boolean
-  showInDock: boolean
+  showInMenuBar: boolean
   shortcut: string
   language: string
 }
@@ -48,3 +48,5 @@ export type Prompt = {
   createdAt: string
   updatedAt: string
 } 
+
+export type LlmProvider = 'openai' | 'google' | 'anthropic' 

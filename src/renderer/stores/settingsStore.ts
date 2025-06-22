@@ -15,8 +15,8 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     general: {
       theme: 'system',
       launchAtLogin: false,
-      showInDock: true,
-      shortcut: 'Shift+Command+Space',
+      showInMenuBar: true,
+      shortcut: 'Command+Space',
       language: 'en'
     },
     ai: {
