@@ -6,15 +6,14 @@ import { useLlmStore } from '../stores/llmStore'
 
 export function FormInput() {
   const { setCurrentView } = useAppStore()
-  const { getPromptById } = usePromptStore()
+  const { getPromptById, formValues, setFormValues } = usePromptStore()
   const { handleSubmit } = useLlmStore()
   const formRef = useRef<HTMLFormElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  const selectedPromptId = useAppStore(state => state.selectedPromptId)
+  const selectedPromptId = useAppStore((state) => state.selectedPromptId)
+  const { lastSelectedPromptId, setLastSelectedPromptId } = useAppStore()
   const selectedPrompt = selectedPromptId ? getPromptById(selectedPromptId) : null
-
-  const [formValues, setFormValues] = useState<{ [key: string]: string }>({})
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -29,32 +28,46 @@ export function FormInput() {
   }, [setCurrentView])
 
   useEffect(() => {
-    if (selectedPrompt) {
+    if (selectedPrompt && selectedPromptId !== lastSelectedPromptId) {
       const initialValues: { [key: string]: string } = {}
       selectedPrompt.placeholders.forEach((p) => {
         initialValues[p.name] = p.defaultValue || ''
       })
       setFormValues(initialValues)
-
-      setTimeout(() => {
-        if (formRef.current) {
-          const firstInput = formRef.current.querySelector('input, select, textarea') as HTMLElement | null
-          if (firstInput) {
-            firstInput.focus()
-          } else if (wrapperRef.current) {
-            wrapperRef.current.focus()
-          }
-        }
-      }, 50)
     }
-  }, [selectedPromptId, selectedPrompt])
+    if (selectedPromptId) {
+      setLastSelectedPromptId(selectedPromptId)
+    }
+  }, [
+    selectedPromptId,
+    selectedPrompt,
+    setFormValues,
+    lastSelectedPromptId,
+    setLastSelectedPromptId
+  ])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formRef.current) {
+        const firstInput = formRef.current.querySelector(
+          'input, select, textarea'
+        ) as HTMLElement | null
+        if (firstInput) {
+          firstInput.focus()
+        } else if (wrapperRef.current) {
+          wrapperRef.current.focus()
+        }
+      }
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [selectedPromptId])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     setFormValues({
       ...formValues,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     })
   }
 
@@ -158,7 +171,14 @@ export function FormInput() {
             <p className="text-sm">Press Cmd+Enter to continue.</p>
           </div>
         )}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 space-x-2">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+          >
+            Back (Esc)
+          </button>
           <button
             type="button"
             onClick={() => handleFormSubmit()}
