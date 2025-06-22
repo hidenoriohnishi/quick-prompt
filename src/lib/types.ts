@@ -47,6 +47,6 @@ export type Prompt = {
   model: string
   createdAt: string
   updatedAt: string
-}
+} 
 
 export type LlmProvider = 'openai' | 'google' | 'anthropic' 

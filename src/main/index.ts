@@ -81,7 +81,7 @@ function createWindow(): void {
     if (settings.general.showInMenuBar) {
       if (mainWindow) {
         createTray(mainWindow)
-      }
+    }
     }
   })
 

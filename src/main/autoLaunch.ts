@@ -1,24 +1,15 @@
-import AutoLaunch from 'electron-auto-launch'
+import { app } from 'electron'
 
-const autoLauncher = new AutoLaunch({
-  name: 'QuickPrompt',
-})
+export function setLaunchAtLogin(enabled: boolean): void {
+  const settings = app.getLoginItemSettings()
 
-export function setLaunchAtLogin(enabled: boolean): Promise<void> {
-  if (enabled) {
-    return autoLauncher.enable()
+  if (settings.openAtLogin === enabled) {
+    return
   }
-  return autoLauncher.disable()
+
+  app.setLoginItemSettings({ openAtLogin: enabled })
 }
 
-export function enableAutoLaunch() {
-  return autoLauncher.enable()
-}
-
-export function disableAutoLaunch() {
-  return autoLauncher.disable()
-}
-
-export function isAutoLaunchEnabled() {
-  return autoLauncher.isEnabled()
+export function isAutoLaunchEnabled(): boolean {
+  return app.getLoginItemSettings().openAtLogin
 } 
