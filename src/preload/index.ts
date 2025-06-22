@@ -64,7 +64,11 @@ export const api = {
     return () => ipcRenderer.removeListener('theme-updated', handler)
   },
 
-  sendLlmRequest: (payload: { messages: Message[], aiProvider: Prompt['aiProvider'], model: Prompt['model']}) => {
+  sendLlmRequest: (payload: {
+    messages: Message[]
+    aiProvider: Prompt['aiProvider']
+    model: Prompt['model']
+  }) => {
     ipcRenderer.send('llm-request', payload)
   },
   cancelLlmRequest: (requestId: string) => ipcRenderer.send('llm-cancel', requestId),

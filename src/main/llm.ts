@@ -12,9 +12,8 @@ const activeRequests = new Map<string, AbortController>()
 type LLMProvider = 'openai' | 'anthropic'
 
 type LLMRequest = {
-  input: string
   provider: LLMProvider
-  prompt: string
+  messages: { role: 'user' | 'assistant'; content: string }[]
   model: string
 }
 
@@ -30,8 +29,7 @@ async function handleLLMRequest(
   store: Store,
   onChunk: (chunk: LlmResponse) => void
 ) {
-  const { provider, input, prompt, model } = request
-  const finalPrompt = prompt.replace('{input}', input)
+  const { provider, messages, model } = request
   const aiProvider = provider || 'openai'
   const requestId = uuidv4()
   const abortController = new AbortController()
@@ -72,7 +70,7 @@ async function handleLLMRequest(
 
     const result = await streamText({
       model: providerInstance.chat(model || 'gpt-4o-mini'),
-      prompt: finalPrompt,
+      messages: messages,
       // @ts-expect-error experimental_streamData is required for usage stats
       experimental_streamData: true,
       abortSignal: abortController.signal,

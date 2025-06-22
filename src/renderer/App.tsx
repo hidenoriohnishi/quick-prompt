@@ -10,6 +10,7 @@ import { useInitializers } from './hooks/useInitializers'
 import { useLlmListener } from './hooks/useLlmListener'
 import { useAppEventListeners } from './hooks/useAppEventListeners'
 import { useTheme } from './hooks/useTheme'
+import { AdjustForm } from './components/AdjustForm'
 
 function App() {
   const { currentView } = useAppStore()
@@ -31,6 +32,8 @@ function App() {
         return <Result />
       case 'settings':
         return <SettingsLayout />
+      case 'adjust_form':
+        return <AdjustForm />
       default:
         return <PromptSelector />
     }

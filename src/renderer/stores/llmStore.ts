@@ -35,6 +35,7 @@ type LlmActions = {
     prompt: string
   ) => void
   cancelRequest: () => void
+  handleAdjustment: (adjustmentText: string, aiProvider: Prompt['aiProvider'], model: Prompt['model']) => void
 }
 
 const initialState: LlmState = {
@@ -84,15 +85,15 @@ export const useLlmStore = create<LlmState & LlmActions>((set, get) => ({
 
   handleSubmit: (userMessageContent, aiProvider, model, prompt) => {
     get().clear()
-    const newUserMessage: Message = { role: 'user', content: userMessageContent }
+    const finalContent = prompt.replace('{input}', userMessageContent)
+    const messages: Message[] = [{ role: 'user', content: finalContent }]
     set({
-      messages: [newUserMessage],
+      messages: messages,
       isLoading: true,
       error: undefined,
     })
     window.electron.sendLlmRequest({
-      input: userMessageContent,
-      prompt: prompt,
+      messages,
       provider: aiProvider,
       model,
     })
@@ -105,4 +106,17 @@ export const useLlmStore = create<LlmState & LlmActions>((set, get) => ({
       set({ isLoading: false, currentRequestId: null })
     }
   },
+
+  handleAdjustment: (adjustmentText, aiProvider, model) => {
+    const currentMessages = get().messages
+    const newMessages = [...currentMessages, { role: 'user', content: adjustmentText }]
+
+    set({ messages: newMessages, isLoading: true, error: undefined })
+    
+    window.electron.sendLlmRequest({
+      messages: newMessages,
+      provider: aiProvider,
+      model,
+    })
+  }
 })) 
