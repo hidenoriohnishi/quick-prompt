@@ -12,7 +12,7 @@ const defaultSettings: Settings = {
   general: {
     theme: 'system',
     launchAtLogin: false,
-    showInDock: true,
+    showInMenuBar: true,
     shortcut: 'Shift+Command+Space',
     language: 'en'
   },
@@ -27,6 +27,10 @@ export function getSettings(): Settings {
   const persistedSettings = store.get('settings') as Settings
   // Use lodash merge for deep merge
   return merge({}, defaultSettings, persistedSettings)
+}
+
+export function setSetting(key: string, value: any): void {
+  store.set(`settings.${key}`, value)
 }
 
 function getPrompts(): Prompt[] {

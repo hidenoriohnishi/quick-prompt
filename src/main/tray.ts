@@ -4,7 +4,10 @@ import { is } from '@electron-toolkit/utils'
 
 let tray: Tray | null = null
 
-export function createTray(win: BrowserWindow) {
+export function createTray(win: BrowserWindow): Tray {
+  if (tray) {
+    return tray
+  }
   let iconPath: string
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     iconPath = path.join(__dirname, '../../assets/icon.png')
@@ -41,4 +44,12 @@ export function createTray(win: BrowserWindow) {
 
   tray.setToolTip('QuickPrompt')
   tray.setContextMenu(contextMenu)
+  return tray
+}
+
+export function destroyTray(): void {
+  if (tray) {
+    tray.destroy()
+    tray = null
+  }
 } 

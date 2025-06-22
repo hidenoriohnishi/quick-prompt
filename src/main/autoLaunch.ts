@@ -4,6 +4,13 @@ const autoLauncher = new AutoLaunch({
   name: 'QuickPrompt',
 })
 
+export function setLaunchAtLogin(enabled: boolean): Promise<void> {
+  if (enabled) {
+    return autoLauncher.enable()
+  }
+  return autoLauncher.disable()
+}
+
 export function enableAutoLaunch() {
   return autoLauncher.enable()
 }

@@ -80,6 +80,9 @@ export function GeneralSettings() {
     if (key === 'launchAtLogin') {
       window.electron.setLaunchAtLogin(value)
     }
+    if (key === 'showInMenuBar') {
+      window.electron.toggleMenuBar(value)
+    }
   }
 
   const handleSelect = (key: keyof GeneralSettings, value: any) => {
@@ -103,10 +106,10 @@ export function GeneralSettings() {
           onToggle={handleToggle}
         />
         <SettingToggle
-          label="Show in Dock"
-          description="Show the application icon in the macOS Dock."
-          settingKey="showInDock"
-          isChecked={generalSettings.showInDock}
+          label="Show in Menu Bar"
+          description="Show the application icon in the macOS Menu Bar."
+          settingKey="showInMenuBar"
+          isChecked={generalSettings.showInMenuBar}
           onToggle={handleToggle}
         />
         <SettingSelect

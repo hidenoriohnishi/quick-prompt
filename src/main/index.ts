@@ -1,14 +1,17 @@
 import { app, BrowserWindow, ipcMain, dialog, Notification, nativeTheme } from 'electron'
 import { join } from 'node:path'
 import { electronApp, is } from '@electron-toolkit/utils'
-import { createTray } from './tray'
-import { setMainWindow, registerShortcut, unregisterAllShortcuts } from './shortcuts'
+import { createTray, destroyTray } from './tray'
+import { setMainWindow, registerShortcut, unregisterAllShortcuts, updateShortcut } from './shortcuts'
 import {
   setupStoreListeners,
   setupSettingsHandlers,
-  default as store
+  default as store,
+  getSettings,
+  setSetting
 } from './storage'
 import { handleLlm } from './llm'
+import { setLaunchAtLogin } from './autoLaunch'
 import type { Settings, GeneralSettings, AISettings } from '../lib/types'
 
 let mainWindow: BrowserWindow | null
@@ -48,11 +51,38 @@ function createWindow(): void {
     new Notification(options).show()
   })
 
-  mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined')
+  ipcMain.on('set-launch-at-login', (_, shouldLaunch: boolean) => {
+    setLaunchAtLogin(shouldLaunch)
+    setSetting('general.launchAtLogin', shouldLaunch)
+  })
+
+  ipcMain.on('update-shortcut', (_, shortcut: string) => {
+    if (mainWindow) {
+      updateShortcut(shortcut, mainWindow)
     }
-    mainWindow.show()
+    setSetting('general.shortcut', shortcut)
+  })
+
+  ipcMain.on('toggle-menu-bar', (_, show: boolean) => {
+    if (mainWindow) {
+      if (show) {
+        createTray(mainWindow)
+      } else {
+        destroyTray()
+      }
+    }
+    setSetting('general.showInMenuBar', show)
+  })
+
+  mainWindow.on('ready-to-show', () => {
+    mainWindow?.show()
+    // Create tray icon on startup if enabled
+    const settings = getSettings()
+    if (settings.general.showInMenuBar) {
+      if (mainWindow) {
+        createTray(mainWindow)
+      }
+    }
   })
 
   mainWindow.on('show', () => {
@@ -90,7 +120,6 @@ app.whenReady().then(() => {
 
   if (mainWindow) {
     setMainWindow(mainWindow)
-    createTray(mainWindow)
     registerShortcut(mainWindow)
     setupSettingsHandlers(ipcMain, nativeTheme, mainWindow)
     app.dock.hide()
