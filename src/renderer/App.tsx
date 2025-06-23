@@ -1,18 +1,22 @@
 import { FormInput } from './components/FormInput'
 import { Loading } from './components/Loading'
 import { Result } from './components/Result'
-import { Settings } from './components/Settings'
+import { SettingsLayout } from './components/settings/SettingsLayout'
 import { PromptSelector } from './components/PromptSelector'
 import { WindowFrame } from './components/WindowFrame'
 import { useAppStore } from './stores/appStore'
 import { useTheme } from './hooks/useTheme'
 import { useAppEventListeners } from './hooks/useAppEventListeners'
 import { useInitializers } from './hooks/useInitializers'
+import { TitleBar } from './components/TitleBar'
+import { useLlmListener } from './hooks/useLlmListener'
 
 function App() {
   useTheme()
-  useAppEventListeners()
   useInitializers()
+  useAppEventListeners()
+  useLlmListener()
+
   const currentView = useAppStore((state) => state.currentView)
 
   const renderView = () => {
@@ -26,7 +30,7 @@ function App() {
       case 'result':
         return <Result />
       case 'settings':
-        return <Settings />
+        return <SettingsLayout />
       default:
         return <PromptSelector />
     }
@@ -34,7 +38,10 @@ function App() {
 
   return (
     <WindowFrame>
-      <div className="h-full p-4">{renderView()}</div>
+      <div className="flex h-full flex-col">
+        <TitleBar />
+        <div className="flex-grow p-4 overflow-hidden">{renderView()}</div>
+      </div>
     </WindowFrame>
   )
 }

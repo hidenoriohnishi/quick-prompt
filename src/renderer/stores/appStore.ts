@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export type View = 'selector' | 'form' | 'loading' | 'result' | 'settings'
-export type SettingsView = 'general' | 'prompts' | 'ai'
+export type SettingsView = 'general' | 'prompts' | 'prompt-detail' | 'ai'
 
 type AppState = {
   currentView: View
@@ -20,7 +20,7 @@ type AppState = {
 
 export const useAppStore = create<AppState>((set) => ({
   currentView: 'selector',
-  settingsView: 'prompts',
+  settingsView: 'general',
   selectedPromptId: null,
   isWindowVisible: false,
   lastSelectedPromptId: null,
