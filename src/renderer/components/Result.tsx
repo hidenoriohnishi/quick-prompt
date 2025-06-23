@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLlmStore, type Usage } from '../stores/llmStore'
 import { useAppStore } from '../stores/appStore'
 import { usePromptStore } from '../stores/promptStore'
+import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
 
 const modelCosts = {
   'gpt-4o': { prompt: 5.0, completion: 15.0 }, // per 1M tokens
@@ -52,30 +53,14 @@ export function Result() {
     }
   }, [usage])
 
-  const handleBack = () => {
-    clearLlm()
-    setCurrentView('selector')
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(editedResult)
-    setIsCopied(true)
-    setWasCopied(true)
-    window.electron.showNotification({
-      title: 'Copied to clipboard!',
-      body: 'The result has been copied to your clipboard.',
-    })
-    setTimeout(() => setIsCopied(false), 2000)
-  }
-  
-  const resetAndClose = () => {
+  const resetAndClose = useCallback(() => {
     clearLlm()
     setCurrentView('selector')
     setSelectedPromptId(null)
     window.electron.hideWindow()
-  }
+  }, [clearLlm, setCurrentView, setSelectedPromptId])
 
-  const handleClose = async () => {
+  const handleClose = useCallback(async () => {
     if (wasCopied) {
       resetAndClose()
     } else {
@@ -85,29 +70,30 @@ export function Result() {
         message: 'The result has not been copied. Are you sure you want to close?',
         buttons: ['Yes, Close', 'No, Cancel'],
         defaultId: 1,
-        cancelId: 1,
+        cancelId: 1
       })
       if (result.response === 0) {
         resetAndClose()
       }
     }
-  }
+  }, [wasCopied, resetAndClose])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        handleClose()
-      } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        handleCopy()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [editedResult, isCopied])
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(editedResult)
+    setIsCopied(true)
+    setWasCopied(true)
+    window.electron.showNotification({
+      title: 'Copied to clipboard!',
+      body: 'The result has been copied to your clipboard.'
+    })
+    setTimeout(() => setIsCopied(false), 2000)
+  }, [editedResult])
+
+  useGlobalShortcuts({
+    'Escape': handleClose,
+    'Meta+Enter': handleCopy,
+    'Ctrl+Enter': handleCopy
+  })
 
   return (
     <div className="flex flex-col h-full p-4">
@@ -130,12 +116,6 @@ export function Result() {
       )}
       <div className="flex justify-end">
         <div className="flex space-x-2">
-           <button
-            onClick={handleBack}
-            className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
-          >
-            Back to Prompts
-          </button>
           <button
             onClick={handleClose}
             className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
@@ -145,7 +125,7 @@ export function Result() {
           <button
             onClick={handleCopy}
             disabled={isCopied}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-green-600 disabled:cursor-not-allowed"
+            className="w-44 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-green-600 disabled:cursor-not-allowed text-center"
           >
             {isCopied ? 'Copied!' : 'Copy (Cmd+Enter)'}
           </button>

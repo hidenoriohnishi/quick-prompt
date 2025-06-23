@@ -7,6 +7,8 @@ import { v4 as uuidv4 } from 'uuid'
 import type Store from 'electron-store'
 import { getSettings } from './storage'
 
+const activeRequests = new Map<string, AbortController>()
+
 type LLMProvider = 'openai' | 'anthropic'
 
 type LLMRequest = {
@@ -32,6 +34,8 @@ async function handleLLMRequest(
   const finalPrompt = prompt.replace('{input}', input)
   const aiProvider = provider || 'openai'
   const requestId = uuidv4()
+  const abortController = new AbortController()
+  activeRequests.set(requestId, abortController)
 
   try {
     const settings = getSettings()
@@ -71,6 +75,7 @@ async function handleLLMRequest(
       prompt: finalPrompt,
       // @ts-expect-error experimental_streamData is required for usage stats
       experimental_streamData: true,
+      abortSignal: abortController.signal,
       onFinish: (result) => {
         // Vercel AI SDKの正しいusage取得方法
         const finalUsage = {
@@ -105,8 +110,12 @@ async function handleLLMRequest(
     }
 
   } catch (error: any) {
-    console.error('[LLM] Error processing request:', error)
-    onChunk({ type: 'error', data: error.message, requestId })
+    if (error.name !== 'AbortError') {
+      console.error('[LLM] Error processing request:', error)
+      onChunk({ type: 'error', data: error.message, requestId })
+    }
+  } finally {
+    activeRequests.delete(requestId)
   }
 }
 
@@ -118,5 +127,14 @@ export function handleLlm(ipcMain: IpcMain, store: Store) {
       }
     }
     handleLLMRequest(event, request, store, onChunk)
+  })
+
+  ipcMain.on('llm-cancel', (_event, requestId: string) => {
+    const controller = activeRequests.get(requestId)
+    if (controller) {
+      controller.abort()
+      activeRequests.delete(requestId)
+      console.log(`[LLM] Cancelled request ${requestId}`)
+    }
   })
 } 

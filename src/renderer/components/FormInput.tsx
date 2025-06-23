@@ -1,20 +1,20 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import { useAppStore } from '../stores/appStore'
 import { usePromptStore } from '../stores/promptStore'
 import { useLlmStore } from '../stores/llmStore'
+import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
 
 export function FormInput() {
   const { setCurrentView } = useAppStore()
-  const { getPromptById } = usePromptStore()
+  const { getPromptById, formValues, setFormValues } = usePromptStore()
   const { handleSubmit } = useLlmStore()
   const formRef = useRef<HTMLFormElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  const selectedPromptId = useAppStore(state => state.selectedPromptId)
+  const selectedPromptId = useAppStore((state) => state.selectedPromptId)
+  const { lastSelectedPromptId, setLastSelectedPromptId } = useAppStore()
   const selectedPrompt = selectedPromptId ? getPromptById(selectedPromptId) : null
-
-  const [formValues, setFormValues] = useState<{ [key: string]: string }>({})
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -29,37 +29,54 @@ export function FormInput() {
   }, [setCurrentView])
 
   useEffect(() => {
-    if (selectedPrompt) {
+    if (selectedPrompt && selectedPromptId !== lastSelectedPromptId) {
       const initialValues: { [key: string]: string } = {}
       selectedPrompt.placeholders.forEach((p) => {
-        initialValues[p.name] = p.defaultValue || ''
+        if (p.type === 'select' && !p.defaultValue) {
+          initialValues[p.name] = p.options?.[0]?.value || ''
+        } else {
+          initialValues[p.name] = p.defaultValue || ''
+        }
       })
       setFormValues(initialValues)
-
-      setTimeout(() => {
-        if (formRef.current) {
-          const firstInput = formRef.current.querySelector('input, select, textarea') as HTMLElement | null
-          if (firstInput) {
-            firstInput.focus()
-          } else if (wrapperRef.current) {
-            wrapperRef.current.focus()
-          }
-        }
-      }, 50)
     }
-  }, [selectedPromptId, selectedPrompt])
+    if (selectedPromptId) {
+      setLastSelectedPromptId(selectedPromptId)
+    }
+  }, [
+    selectedPromptId,
+    selectedPrompt,
+    setFormValues,
+    lastSelectedPromptId,
+    setLastSelectedPromptId
+  ])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formRef.current) {
+        const firstInput = formRef.current.querySelector(
+          'input, select, textarea'
+        ) as HTMLElement | null
+        if (firstInput) {
+          firstInput.focus()
+        } else if (wrapperRef.current) {
+          wrapperRef.current.focus()
+        }
+      }
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [selectedPromptId])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     setFormValues({
       ...formValues,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     })
   }
 
-  const handleFormSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault()
+  const handleFormSubmit = useCallback(() => {
     if (!selectedPrompt) return
 
     let processedTemplate = selectedPrompt.template
@@ -69,28 +86,34 @@ export function FormInput() {
 
     handleSubmit(processedTemplate, selectedPrompt.aiProvider, selectedPrompt.model, processedTemplate)
     setCurrentView('loading')
-  }
+  }, [selectedPrompt, formValues, handleSubmit, setCurrentView])
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setCurrentView('selector')
-  }
+  },[setCurrentView])
+
+  useGlobalShortcuts({
+    'Escape': handleCancel,
+    'Meta+Enter': handleFormSubmit,
+    'Ctrl+Enter': handleFormSubmit,
+  })
 
   if (!selectedPrompt) {
     return <div>Select a prompt to begin.</div>
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      handleFormSubmit();
-    }
-  }
-
   return (
-    <div ref={wrapperRef} onKeyDown={handleKeyDown} className="flex flex-col h-full focus:outline-none" tabIndex={-1}>
+    <div ref={wrapperRef} className="flex flex-col h-full focus:outline-none" tabIndex={-1}>
       <h2 className="text-lg font-bold mb-2">{selectedPrompt.name}</h2>
       <p className="text-sm text-neutral-500 mb-4">{selectedPrompt.description}</p>
-      <form ref={formRef} className="flex-grow space-y-4 overflow-y-auto pr-2">
+      <form
+        ref={formRef}
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleFormSubmit()
+        }}
+        className="flex-grow space-y-4 overflow-y-auto pr-2"
+      >
         {selectedPrompt.placeholders.length > 0 ? (
           selectedPrompt.placeholders.map((placeholder) => {
             const { id, name, label, type, options, defaultValue } = placeholder
@@ -158,10 +181,17 @@ export function FormInput() {
             <p className="text-sm">Press Cmd+Enter to continue.</p>
           </div>
         )}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-between items-center pt-4">
           <button
             type="button"
-            onClick={() => handleFormSubmit()}
+            onClick={handleCancel}
+            className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+          >
+            Back (Esc)
+          </button>
+          <button
+            type="button"
+            onClick={handleFormSubmit}
             className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
           >
             Generate (Cmd+Enter)

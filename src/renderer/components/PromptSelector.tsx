@@ -1,42 +1,39 @@
 import { usePromptStore } from '../stores/promptStore'
 import { useAppStore } from '../stores/appStore'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { clsx } from 'clsx'
+import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
 
 export function PromptSelector() {
   const { prompts } = usePromptStore()
   const { setCurrentView, setSelectedPromptId } = useAppStore()
   const [activeIndex, setActiveIndex] = useState(0)
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setActiveIndex((prev) => (prev + 1) % prompts.length)
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setActiveIndex((prev) => (prev - 1 + prompts.length) % prompts.length)
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        const selectedPrompt = prompts[activeIndex]
-        if (selectedPrompt) {
-          handleSelectPrompt(selectedPrompt.id)
-        }
-      } else if (e.key === 'Escape') {
-        window.electron.hideWindow()
+  const handleSelectPrompt = useCallback(
+    (id: string) => {
+      setSelectedPromptId(id)
+      setCurrentView('form')
+    },
+    [setCurrentView, setSelectedPromptId]
+  )
+
+  useGlobalShortcuts({
+    'ArrowDown': useCallback(() => {
+      setActiveIndex((prev) => (prev + 1) % prompts.length)
+    }, [prompts.length]),
+    'ArrowUp': useCallback(() => {
+      setActiveIndex((prev) => (prev - 1 + prompts.length) % prompts.length)
+    }, [prompts.length]),
+    'Enter': useCallback(() => {
+      const selectedPrompt = prompts[activeIndex]
+      if (selectedPrompt) {
+        handleSelectPrompt(selectedPrompt.id)
       }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [activeIndex, prompts])
-
-  const handleSelectPrompt = (id: string) => {
-    setSelectedPromptId(id)
-    setCurrentView('form')
-  }
+    }, [activeIndex, prompts, handleSelectPrompt]),
+    'Escape': useCallback(() => {
+      window.electron.hideWindow()
+    }, [])
+  })
 
   return (
     <div className="flex flex-col h-full">
