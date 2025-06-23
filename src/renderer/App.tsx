@@ -1,24 +1,19 @@
-import { WindowFrame } from './components/WindowFrame'
-import { TitleBar } from './components/TitleBar'
-import { useAppStore } from './stores/appStore'
-import { PromptSelector } from './components/PromptSelector'
 import { FormInput } from './components/FormInput'
 import { Loading } from './components/Loading'
 import { Result } from './components/Result'
-import { SettingsLayout } from './components/settings/SettingsLayout'
-import { useInitializers } from './hooks/useInitializers'
-import { useLlmListener } from './hooks/useLlmListener'
-import { useAppEventListeners } from './hooks/useAppEventListeners'
+import { Settings } from './components/Settings'
+import { PromptSelector } from './components/PromptSelector'
+import { WindowFrame } from './components/WindowFrame'
+import { useAppStore } from './stores/appStore'
 import { useTheme } from './hooks/useTheme'
-import { AdjustForm } from './components/AdjustForm'
+import { useAppEventListeners } from './hooks/useAppEventListeners'
+import { useInitializers } from './hooks/useInitializers'
 
 function App() {
-  const { currentView } = useAppStore()
-
-  useInitializers()
-  useLlmListener()
-  useAppEventListeners()
   useTheme()
+  useAppEventListeners()
+  useInitializers()
+  const currentView = useAppStore((state) => state.currentView)
 
   const renderView = () => {
     switch (currentView) {
@@ -31,9 +26,7 @@ function App() {
       case 'result':
         return <Result />
       case 'settings':
-        return <SettingsLayout />
-      case 'adjust_form':
-        return <AdjustForm />
+        return <Settings />
       default:
         return <PromptSelector />
     }
@@ -41,12 +34,7 @@ function App() {
 
   return (
     <WindowFrame>
-      <div className="flex h-full flex-col">
-        <TitleBar />
-        <div className="flex-grow p-4 overflow-hidden">
-          {renderView()}
-        </div>
-      </div>
+      <div className="h-full p-4">{renderView()}</div>
     </WindowFrame>
   )
 }

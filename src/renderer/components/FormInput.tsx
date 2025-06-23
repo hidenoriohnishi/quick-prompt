@@ -32,7 +32,11 @@ export function FormInput() {
     if (selectedPrompt && selectedPromptId !== lastSelectedPromptId) {
       const initialValues: { [key: string]: string } = {}
       selectedPrompt.placeholders.forEach((p) => {
-        initialValues[p.name] = p.defaultValue || ''
+        if (p.type === 'select' && !p.defaultValue) {
+          initialValues[p.name] = p.options?.[0]?.value || ''
+        } else {
+          initialValues[p.name] = p.defaultValue || ''
+        }
       })
       setFormValues(initialValues)
     }

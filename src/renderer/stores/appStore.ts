@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type View = 'selector' | 'form' | 'loading' | 'result' | 'settings' | 'adjust_form'
+export type View = 'selector' | 'form' | 'loading' | 'result' | 'settings'
 export type SettingsView = 'general' | 'prompts' | 'ai'
 
 type AppState = {
@@ -9,7 +9,6 @@ type AppState = {
   selectedPromptId: string | null
   isWindowVisible: boolean
   lastSelectedPromptId: string | null
-  viewBeforeLoading: View | null
 
   setCurrentView: (view: View) => void
   setSettingsView: (view: SettingsView) => void
@@ -17,7 +16,6 @@ type AppState = {
   setLastSelectedPromptId: (id: string | null) => void
   showWindow: () => void
   hideWindow: () => void
-  setViewBeforeLoading: (view: View | null) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -26,7 +24,6 @@ export const useAppStore = create<AppState>((set) => ({
   selectedPromptId: null,
   isWindowVisible: false,
   lastSelectedPromptId: null,
-  viewBeforeLoading: null,
 
   setCurrentView: (view) => set({ currentView: view }),
   setSettingsView: (view) => set({ settingsView: view }),
@@ -34,5 +31,4 @@ export const useAppStore = create<AppState>((set) => ({
   setLastSelectedPromptId: (id) => set({ lastSelectedPromptId: id }),
   showWindow: () => set({ isWindowVisible: true }),
   hideWindow: () => set({ isWindowVisible: false, currentView: 'selector' }),
-  setViewBeforeLoading: (view) => set({ viewBeforeLoading: view }),
 })) 

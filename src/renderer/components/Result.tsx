@@ -53,10 +53,6 @@ export function Result() {
     }
   }, [usage])
 
-  const handleAdjust = useCallback(() => {
-    setCurrentView('adjust_form')
-  }, [setCurrentView])
-
   const resetAndClose = useCallback(() => {
     clearLlm()
     setCurrentView('selector')
@@ -96,8 +92,7 @@ export function Result() {
   useGlobalShortcuts({
     'Escape': handleClose,
     'Meta+Enter': handleCopy,
-    'Ctrl+Enter': handleCopy,
-    'Shift+Enter': handleAdjust
+    'Ctrl+Enter': handleCopy
   })
 
   return (
@@ -119,21 +114,13 @@ export function Result() {
           Tokens: {usage.totalTokens} (Prompt: {usage.promptTokens}, Completion: {usage.completionTokens}) / Cost: ${estimatedCost}
         </div>
       )}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-end">
+        <div className="flex space-x-2">
           <button
             onClick={handleClose}
             className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
           >
             Close (ESC)
-          </button>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={handleAdjust}
-            className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
-          >
-            Adjust (Shift+Enter)
           </button>
           <button
             onClick={handleCopy}

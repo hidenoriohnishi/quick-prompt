@@ -65,7 +65,8 @@ export const api = {
   },
 
   sendLlmRequest: (payload: {
-    messages: Message[]
+    input: string
+    prompt: string
     aiProvider: Prompt['aiProvider']
     model: Prompt['model']
   }) => {

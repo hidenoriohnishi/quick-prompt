@@ -5,7 +5,7 @@ import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
 
 export function Loading() {
   const { messages, cancelRequest } = useLlmStore()
-  const { setCurrentView, viewBeforeLoading, setViewBeforeLoading } = useAppStore()
+  const { setCurrentView } = useAppStore()
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -16,12 +16,11 @@ export function Loading() {
 
   const handleCancel = useCallback(() => {
     cancelRequest()
-    setCurrentView(viewBeforeLoading || 'form')
-    setViewBeforeLoading(null)
-  }, [cancelRequest, setCurrentView, viewBeforeLoading, setViewBeforeLoading])
+    setCurrentView('form')
+  }, [cancelRequest, setCurrentView])
 
   useGlobalShortcuts({
-    'Escape': handleCancel,
+    'Escape': handleCancel
   })
 
   const assistantMessage = messages.find((m) => m.role === 'assistant')?.content || ''
