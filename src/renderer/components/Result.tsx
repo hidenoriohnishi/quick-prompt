@@ -7,14 +7,15 @@ import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
 const modelCosts = {
   'gpt-4o': { prompt: 5.0, completion: 15.0 }, // per 1M tokens
   'gpt-4o-mini': { prompt: 0.15, completion: 0.6 },
-  'gpt-4-turbo': { prompt: 10.0, completion: 30.0 },
-  'gpt-3.5-turbo': { prompt: 0.5, completion: 1.5 },
   'gpt-4.1': { prompt: 2.0, completion: 8.0 },
   'gpt-4.1-mini': { prompt: 0.4, completion: 1.6 },
   'gpt-4.1-nano': { prompt: 0.1, completion: 0.4 },
   'claude-3-opus-20240229': { prompt: 15.0, completion: 75.0 },
-  'claude-3-sonnet-20240229': { prompt: 3.0, completion: 15.0 },
-  'claude-3-haiku-20240307': { prompt: 0.25, completion: 1.25 },
+  'claude-3.5-sonnet-20241022': { prompt: 3.0, completion: 15.0 },
+  'claude-3-haiku-20241022': { prompt: 0.8, completion: 4.0 },
+  'claude-opus-4-20250514': { prompt: 15.0, completion: 75.0 },
+  'claude-sonnet-4-20250514': { prompt: 3.0, completion: 15.0 },
+  'claude-3-7-sonnet-20250219': { prompt: 3.0, completion: 15.0 }
 };
 
 function calculateCost(model: string, usage: Usage): string | null {
@@ -29,13 +30,12 @@ function calculateCost(model: string, usage: Usage): string | null {
 }
 
 export function Result() {
-  const { messages, usage, clear: clearLlm } = useLlmStore()
-  const { setCurrentView, setSelectedPromptId } = useAppStore()
-  
+  const { messages, usage } = useLlmStore()
+  const { setCurrentView } = useAppStore()
+
   const assistantMessage = messages.find((m) => m.role === 'assistant')?.content || ''
   const [editedResult, setEditedResult] = useState(assistantMessage)
   const [isCopied, setIsCopied] = useState(false)
-  const [wasCopied, setWasCopied] = useState(false)
   const [estimatedCost, setEstimatedCost] = useState<string | null>(null)
 
   useEffect(() => {
@@ -46,51 +46,29 @@ export function Result() {
     if (usage) {
       const selectedPromptId = useAppStore.getState().selectedPromptId
       const prompts = usePromptStore.getState().prompts
-      const currentPrompt = prompts.find(p => p.id === selectedPromptId)
+      const currentPrompt = prompts.find((p) => p.id === selectedPromptId)
       if (currentPrompt) {
         setEstimatedCost(calculateCost(currentPrompt.model, usage))
       }
     }
   }, [usage])
 
-  const resetAndClose = useCallback(() => {
-    clearLlm()
-    setCurrentView('selector')
-    setSelectedPromptId(null)
-    window.electron.hideWindow()
-  }, [clearLlm, setCurrentView, setSelectedPromptId])
-
-  const handleClose = useCallback(async () => {
-    if (wasCopied) {
-      resetAndClose()
-    } else {
-      const result = await window.electron.showConfirmationDialog({
-        type: 'warning',
-        title: 'Confirm Close',
-        message: 'The result has not been copied. Are you sure you want to close?',
-        buttons: ['Yes, Close', 'No, Cancel'],
-        defaultId: 1,
-        cancelId: 1
-      })
-      if (result.response === 0) {
-        resetAndClose()
-      }
-    }
-  }, [wasCopied, resetAndClose])
+  const handleBackToPrompt = useCallback(() => {
+    setCurrentView('form')
+  }, [setCurrentView])
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(editedResult)
     setIsCopied(true)
-    setWasCopied(true)
     window.electron.showNotification({
       title: 'Copied to clipboard!',
       body: 'The result has been copied to your clipboard.'
     })
-    setTimeout(() => setIsCopied(false), 2000)
+    window.electron.hideWindow()
   }, [editedResult])
 
   useGlobalShortcuts({
-    'Escape': handleClose,
+    'Escape': handleBackToPrompt,
     'Meta+Enter': handleCopy,
     'Ctrl+Enter': handleCopy
   })
@@ -104,7 +82,6 @@ export function Result() {
           onChange={(e) => {
             setEditedResult(e.target.value)
             setIsCopied(false)
-            setWasCopied(false)
           }}
           className="w-full h-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md resize-none"
         />
@@ -117,17 +94,17 @@ export function Result() {
       <div className="flex justify-end">
         <div className="flex space-x-2">
           <button
-            onClick={handleClose}
+            onClick={handleBackToPrompt}
             className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
           >
-            Close (ESC)
+            Back to prompt (ESC)
           </button>
           <button
             onClick={handleCopy}
             disabled={isCopied}
-            className="w-44 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-green-600 disabled:cursor-not-allowed text-center"
+            className="w-44 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-700 disabled:cursor-not-allowed text-center"
           >
-            {isCopied ? 'Copied!' : 'Copy (Cmd+Enter)'}
+            Copy (Cmd+Enter)
           </button>
         </div>
       </div>

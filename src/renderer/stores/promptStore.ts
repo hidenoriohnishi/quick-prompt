@@ -13,6 +13,7 @@ export type PromptStore = {
   isInitialized: boolean
   setInitialized: (isInitialized: boolean) => void
   setFormValues: (formValues: { [key: string]: string }) => void
+  resetFormValues: () => void
 }
 
 export const usePromptStore = create<PromptStore>()((set, get) => ({
@@ -31,4 +32,5 @@ export const usePromptStore = create<PromptStore>()((set, get) => ({
     })),
   deletePrompt: (id) => set((state) => ({ prompts: state.prompts.filter((p) => p.id !== id) })),
   setFormValues: (formValues) => set({ formValues }),
+  resetFormValues: () => set({ formValues: {} })
 })) 
