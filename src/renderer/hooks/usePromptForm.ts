@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { usePromptStore } from '../stores/promptStore'
 import type { Prompt, Placeholder, SelectOption } from '../../lib/types'
+import { v4 as uuidv4 } from 'uuid'
 
 export function usePromptForm(promptId: string | null) {
   const { prompts, addPrompt, updatePrompt } = usePromptStore()
@@ -33,7 +34,12 @@ export function usePromptForm(promptId: string | null) {
         updatePrompt({ ...prompt, id: promptId, createdAt: originalPrompt.createdAt, updatedAt: new Date().toISOString() })
       }
     } else {
-      addPrompt(prompt)
+      addPrompt({
+        ...prompt,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as Prompt)
     }
     return true
   }

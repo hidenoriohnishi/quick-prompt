@@ -128,6 +128,11 @@ app.whenReady().then(() => {
   setupStoreListeners()
   handleLlm(ipcMain, store)
 
+  ipcMain.handle('debug-get-prompts', () => {
+    console.log(store.get('prompts'))
+    return store.get('prompts')
+  })
+
   nativeTheme.on('updated', () => {
     mainWindow?.webContents.send('theme-updated', nativeTheme.themeSource)
   })

@@ -1,15 +1,44 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import type { MessageBoxOptions, NotificationConstructorOptions } from 'electron'
 // import type { LlmResponse } from '../main/llm' // This line causes issues, commenting out for now.
-import type { Prompt } from '../renderer/stores/promptStore'
 import type { Message } from '../renderer/stores/llmStore'
 
-// Copied from src/main/llm.ts to avoid import issues in preload script.
+// --- Copied types to avoid import issues in preload script ---
+
+export type SelectOption = {
+  id: string
+  label: string
+  value: string
+}
+
+export type Placeholder = {
+  id: string
+  name: string
+  label: string
+  type: 'text' | 'select' | 'textarea'
+  options?: SelectOption[]
+  defaultValue?: string
+}
+
+export type Prompt = {
+  id:string
+  name: string
+  description: string
+  template: string
+  placeholders: Placeholder[]
+  aiProvider: string
+  model: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type LlmResponse = {
   type: 'chunk' | 'error' | 'end' | 'usage'
   data: string
   requestId?: string
 }
+
+// --- End of copied types ---
 
 export const api = {
   // ... (rest of the api methods)
@@ -19,6 +48,7 @@ export const api = {
   setSettings: (settings: any) => ipcRenderer.invoke('set-settings', settings),
   getPrompts: () => ipcRenderer.invoke('get-prompts'),
   setPrompts: (prompts: any) => ipcRenderer.invoke('set-prompts', prompts),
+  debugGetPrompts: () => ipcRenderer.invoke('debug-get-prompts'),
   onSettingsInitialized: (callback: (settings: any) => void) => {
     const handler = (_event: IpcRendererEvent, settings: any) => callback(settings)
     ipcRenderer.on('settings-initialized', handler)

@@ -125,7 +125,7 @@ export function PromptList() {
             <div className="px-6 py-3 w-1/4 text-right">Actions</div>
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={prompts} strategy={verticalListSortingStrategy}>
+            <SortableContext items={prompts.map((p) => p.id)} strategy={verticalListSortingStrategy}>
               <div>
                 {prompts.map((prompt: Prompt) => (
                   <SortableItem key={prompt.id} prompt={prompt} />
