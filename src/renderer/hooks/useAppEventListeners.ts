@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores/appStore'
+import { usePromptStore } from '../stores/promptStore'
 
 export function useAppEventListeners() {
   const { setCurrentView } = useAppStore()
@@ -8,6 +9,7 @@ export function useAppEventListeners() {
     const removeListener = window.electron.onWindowVisibilityChange((isVisible: boolean) => {
       if (!isVisible) {
         useAppStore.getState().setCurrentView('selector')
+        usePromptStore.getState().resetFormValues()
       }
     })
     return () => removeListener()

@@ -15,9 +15,12 @@ const openAIModels = [
   'gpt-4.1-nano'
 ]
 const anthropicModels = [
-  'claude-3-opus-20240229',
-  'claude-3-sonnet-20240229',
-  'claude-3-haiku-20240307'
+  { id: 'claude-3-opus-20240229', name: 'claude-3-opus-latest' },
+  { id: 'claude-3.5-sonnet-20241022', name: 'claude-3.5-sonnet-latest' },
+  { id: 'claude-3-haiku-20241022', name: 'claude-3.5-haiku-latest' },
+  { id: 'claude-opus-4-20250514', name: 'claude-opus-4-0' },
+  { id: 'claude-sonnet-4-20250514', name: 'claude-sonnet-4-0' },
+  { id: 'claude-3-7-sonnet-20250219', name: 'claude-3-7-sonnet-latest' }
 ]
 
 export function PromptDetail() {
@@ -226,7 +229,7 @@ export function PromptDetail() {
                   setPrompt({
                     ...prompt,
                     aiProvider: e.target.value,
-                    model: e.target.value === 'openai' ? 'gpt-4o-mini' : 'claude-3-haiku-20240307'
+                    model: e.target.value === 'openai' ? openAIModels[1] : anthropicModels[1].id
                   })
                 }
                 className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
@@ -245,11 +248,17 @@ export function PromptDetail() {
                 onChange={(e) => setPrompt({ ...prompt, model: e.target.value })}
                 className="w-full p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
               >
-                {(prompt.aiProvider === 'openai' ? openAIModels : anthropicModels).map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
+                {prompt.aiProvider === 'openai'
+                  ? openAIModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))
+                  : anthropicModels.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
               </select>
             </div>
           </div>
