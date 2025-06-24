@@ -15,6 +15,7 @@ import { setLaunchAtLogin } from './autoLaunch'
 import type { Settings, GeneralSettings, AISettings } from '../lib/types'
 
 let mainWindow: BrowserWindow | null
+let forceQuit = false
 
 function createWindow(): void {
   const icon = is.dev
@@ -93,6 +94,17 @@ function createWindow(): void {
     mainWindow?.webContents.send('window-visibility-changed', false)
   })
 
+  mainWindow.on('close', (event) => {
+    if (!forceQuit) {
+      event.preventDefault()
+      mainWindow?.hide()
+    }
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
+
   mainWindow.webContents.setWindowOpenHandler(() => {
     return { action: 'deny' }
   })
@@ -140,6 +152,10 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+app.on('before-quit', () => {
+  forceQuit = true
 })
 
 app.on('window-all-closed', () => {

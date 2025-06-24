@@ -69,6 +69,7 @@ export function Result() {
 
   useGlobalShortcuts({
     'Escape': handleBackToPrompt,
+    'Meta+W': () => window.electron.hideWindow(),
     'Meta+Enter': handleCopy,
     'Ctrl+Enter': handleCopy
   })
@@ -91,18 +92,24 @@ export function Result() {
           Tokens: {usage.totalTokens} (Prompt: {usage.promptTokens}, Completion: {usage.completionTokens}) / Cost: ${estimatedCost}
         </div>
       )}
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <button
+          onClick={handleBackToPrompt}
+          className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+        >
+          Back to prompt (ESC)
+        </button>
         <div className="flex space-x-2">
           <button
-            onClick={handleBackToPrompt}
+            onClick={() => window.electron.hideWindow()}
             className="px-4 py-2 rounded-md bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600"
           >
-            Back to prompt (ESC)
+            Close (Cmd+W)
           </button>
           <button
             onClick={handleCopy}
             disabled={isCopied}
-            className="w-44 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-700 disabled:cursor-not-allowed text-center"
+            className="w-48 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-700 disabled:cursor-not-allowed text-center"
           >
             Copy (Cmd+Enter)
           </button>
