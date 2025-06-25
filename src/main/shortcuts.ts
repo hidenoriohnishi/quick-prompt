@@ -24,6 +24,7 @@ export function registerShortcut(win: BrowserWindow) {
       win.hide()
     } else {
       win.show()
+      win.focus()
     }
   })
 }
@@ -48,6 +49,7 @@ export function updateShortcut(shortcut: string, win: BrowserWindow) {
       win.hide()
     } else {
       win.show()
+      win.focus()
     }
   })
   
