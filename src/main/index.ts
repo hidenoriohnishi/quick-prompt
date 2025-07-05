@@ -28,6 +28,7 @@ function createWindow(): void {
     show: false,
     frame: false,
     resizable: false,
+    alwaysOnTop: true,
     ...(process.platform !== 'darwin' && { icon }),
     vibrancy: 'under-window',
     visualEffectState: 'active',
@@ -37,6 +38,8 @@ function createWindow(): void {
       sandbox: false
     }
   })
+
+  mainWindow.setVisibleOnAllWorkspaces(true, { skipTransformProcessType: true })
 
   ipcMain.on('hide-window', () => {
     mainWindow?.hide()

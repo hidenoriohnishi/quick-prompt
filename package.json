@@ -64,7 +64,14 @@
       }
     ],
     "mac": {
-      "icon": "assets/quick-prompt-app-icon@2x.png"
+      "icon": "assets/quick-prompt-app-icon@2x.png",
+      "target": {
+        "target": "default",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      }
     },
     "win": {
       "icon": "assets/icon.ico"
