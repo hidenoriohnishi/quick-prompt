@@ -39,7 +39,7 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.setVisibleOnAllWorkspaces(true)
+  mainWindow.setVisibleOnAllWorkspaces(true, { skipTransformProcessType: true })
 
   ipcMain.on('hide-window', () => {
     mainWindow?.hide()

@@ -1,4 +1,4 @@
-import { app, globalShortcut, BrowserWindow } from 'electron'
+import { app, globalShortcut, BrowserWindow, screen } from 'electron'
 import store from './storage'
 
 let mainWindow: BrowserWindow | null = null
@@ -6,6 +6,19 @@ let currentShortcut: string
 
 export function setMainWindow(win: BrowserWindow) {
   mainWindow = win
+}
+
+function showWindowInCenter(win: BrowserWindow) {
+  const { x, y } = screen.getCursorScreenPoint()
+  const display = screen.getDisplayNearestPoint({ x, y })
+  const { width, height } = win.getBounds()
+  const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = display.workArea
+  const newX = Math.floor(displayX + (displayWidth - width) / 2)
+  const newY = Math.floor(displayY + (displayHeight - height) / 2)
+  win.hide()
+  win.setPosition(newX, newY)
+  win.show()
+  win.focus()
 }
 
 function getShortcutFromStore(): string {
@@ -23,8 +36,7 @@ export function registerShortcut(win: BrowserWindow) {
     if (win.isVisible()) {
       win.hide()
     } else {
-      win.show()
-      win.focus()
+      showWindowInCenter(win)
     }
   })
 }
@@ -48,8 +60,7 @@ export function updateShortcut(shortcut: string, win: BrowserWindow) {
     if (win.isVisible()) {
       win.hide()
     } else {
-      win.show()
-      win.focus()
+      showWindowInCenter(win)
     }
   })
   
